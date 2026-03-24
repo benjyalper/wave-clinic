@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&family=Assistant:wght@300;400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --teal-primary: #2bafa0;
+  --navy-header: #2c3444;
+  --green-btn: #27ae60;
+  --bg-light: #f0f2f5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  font-family: 'Rubik', 'Assistant', sans-serif;
+}
+
+body {
+  direction: rtl;
+  background-color: var(--bg-light);
+  font-family: 'Rubik', 'Assistant', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+input, textarea, select, button {
+  font-family: 'Rubik', 'Assistant', sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* RTL form inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="date"],
+textarea,
+select {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Header dropdown */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 160px;
+  z-index: 1000;
+  padding: 4px 0;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: right;
+  color: #374151;
+  font-size: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.dropdown-menu a:hover,
+.dropdown-menu button:hover {
+  background-color: #f3f4f6;
+}
+
+/* Calendar styles */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(6, 1fr);
+}
+
+.time-slot {
+  border-bottom: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
+  min-height: 30px;
+  position: relative;
+  cursor: pointer;
+}
+
+.time-slot:hover {
+  background-color: #f0faf9;
+}
+
+.today-column {
+  background-color: #fffff0;
+}
+
+/* Rich text toolbar buttons */
+.rtb-btn {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: background 0.15s;
+}
+
+.rtb-btn:hover {
+  background: #f3f4f6;
+}
+
+/* Teal button */
+.btn-teal {
+  background-color: var(--teal-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-teal:hover {
+  opacity: 0.9;
+}
+
+/* Outlined teal button */
+.btn-teal-outline {
+  background: white;
+  color: var(--teal-primary);
+  border: 1.5px solid var(--teal-primary);
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-teal-outline:hover {
+  background: #f0faf9;
+}
+
+/* Navy button */
+.btn-navy {
+  background-color: var(--navy-header);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-navy:hover {
+  opacity: 0.85;
+}
