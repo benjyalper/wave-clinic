@@ -63,12 +63,43 @@ export default function NewPatientPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return
     setSaved(true)
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 1200)
+    try {
+      const token = localStorage.getItem('wave_token')
+      const res = await fetch('/api/patients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.mobile,
+          phoneAlt: form.phone2,
+          email: form.email,
+          birthDate: form.birthDate || null,
+          idNumber: form.idNumber,
+          address: form.address,
+          hmo: form.hmo === '--' ? '' : form.hmo,
+          invoiceName: form.invoiceName,
+          gender: form.gender,
+          notes: form.notes,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        alert(data.error || 'שגיאה בשמירה')
+        setSaved(false)
+        return
+      }
+      setTimeout(() => router.push('/reports/patients'), 1000)
+    } catch {
+      alert('שגיאת רשת')
+      setSaved(false)
+    }
   }
 
   const inputClass = (field: keyof PatientForm) =>
