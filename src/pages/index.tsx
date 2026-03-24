@@ -4,8 +4,10 @@ import Head from 'next/head'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [businessName, setBusinessName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,7 +18,7 @@ export default function LoginPage() {
     }
   }, [router])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!username.trim() || !password.trim()) {
       setError('נא למלא שם משתמש וסיסמה')
@@ -25,14 +27,19 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/auth/login', {
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
+      const body = mode === 'login'
+        ? { username, password }
+        : { username, password, businessName: businessName || 'הקליניקה שלי' }
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'שגיאה בכניסה')
+        setError(data.error || 'שגיאה')
         setLoading(false)
         return
       }
@@ -120,10 +127,25 @@ export default function LoginPage() {
               className="text-2xl font-bold mb-6 text-center"
               style={{ color: '#2bafa0' }}
             >
-              התחברות
+              {mode === 'login' ? 'התחברות' : 'רישום חדש'}
             </h2>
 
-            <form onSubmit={handleLogin} noValidate>
+            <form onSubmit={handleSubmit} noValidate>
+              {/* Business name - register only */}
+              {mode === 'register' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">שם העסק / הקליניקה</label>
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={e => setBusinessName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-teal-400"
+                    style={{ direction: 'rtl' }}
+                    placeholder="למשל: ד״ר כהן - פסיכולוג"
+                  />
+                </div>
+              )}
+
               {/* Username */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -178,7 +200,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Login button */}
+              {/* Submit button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -189,10 +211,10 @@ export default function LoginPage() {
                   cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               >
-                {loading ? 'מתחבר...' : 'כניסה'}
+                {loading ? '...' : mode === 'login' ? 'כניסה' : 'הרשמה'}
               </button>
 
-              {/* Register button */}
+              {/* Toggle mode */}
               <button
                 type="button"
                 className="w-full rounded-lg py-3 font-semibold text-base transition-colors"
@@ -202,9 +224,9 @@ export default function LoginPage() {
                   border: '2px solid #2bafa0',
                   cursor: 'pointer',
                 }}
-                onClick={() => alert('רישום להתנסות - בקרוב!')}
+                onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
               >
-                רישום להתנסות
+                {mode === 'login' ? 'רישום להתנסות' : 'יש לי חשבון — כניסה'}
               </button>
             </form>
           </div>

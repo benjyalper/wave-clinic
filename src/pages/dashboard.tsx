@@ -17,6 +17,52 @@ function getGreeting(): string {
   return 'לילה טוב'
 }
 
+// Mobile quick-action buttons
+const MOBILE_ACTIONS = [
+  {
+    icon: '⚙️',
+    label: 'מרכז זימון תורים לא פעיל',
+    href: null,
+    grayed: true,
+  },
+  {
+    icon: '☰',
+    label: 'משימות',
+    href: null,
+    grayed: false,
+  },
+  {
+    icon: '✈️',
+    label: 'שליחת תזכורות',
+    href: null,
+    grayed: false,
+  },
+  {
+    icon: '👤',
+    label: 'הוספת מטופל/ת',
+    href: '/patients/new',
+    grayed: false,
+  },
+  {
+    icon: '📅',
+    label: 'קביעת תור ביומן',
+    href: '/calendar',
+    grayed: false,
+  },
+  {
+    icon: '📋',
+    label: 'יומן כרשימה',
+    href: '/reports/doctor-diary',
+    grayed: false,
+  },
+  {
+    icon: '⚙️',
+    label: 'הגדרות',
+    href: '/settings/user',
+    grayed: false,
+  },
+]
+
 export default function Dashboard() {
   const router = useRouter()
   const [userName, setUserName] = useState('J')
@@ -24,6 +70,7 @@ export default function Dashboard() {
   const [newTask, setNewTask] = useState('')
   const [tasks, setTasks] = useState<string[]>([])
   const [greeting, setGreeting] = useState('')
+  const [searchVal, setSearchVal] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -35,7 +82,6 @@ export default function Dashboard() {
       setUserName(u)
     }
     setGreeting(getGreeting())
-    // Set today's date as default
     const today = new Date()
     const dd = String(today.getDate()).padStart(2, '0')
     const mm = String(today.getMonth() + 1).padStart(2, '0')
@@ -65,7 +111,91 @@ export default function Dashboard() {
       <div dir="rtl" style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Rubik', sans-serif" }}>
         <AppHeader />
 
-        <main className="max-w-7xl mx-auto px-4 py-5">
+        {/* ─────────────── MOBILE LAYOUT (below md) ─────────────── */}
+        <div className="md:hidden px-3 py-4 space-y-3">
+          {/* Greeting banner */}
+          <div
+            className="rounded-xl px-4 py-3 flex items-center justify-between shadow-sm"
+            style={{ backgroundColor: '#d1fae5', border: '1px solid #a7f3d0' }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🌿</span>
+              <span className="text-gray-700 font-medium text-sm">
+                {greeting}, לא נקבעו טיפולים להיום.
+              </span>
+            </div>
+            <button
+              className="p-1.5 rounded-lg hover:bg-green-200 transition-colors flex-shrink-0"
+              onClick={() => window.location.reload()}
+            >
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M20 9A8 8 0 006.5 5.5L4 9m16 6l-2.5 3.5A8 8 0 013.9 15" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Search bar */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchVal}
+              onChange={e => setSearchVal(e.target.value)}
+              placeholder="חיפוש שם מטופל או טלפון"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-400 shadow-sm"
+              style={{ direction: 'rtl' }}
+            />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              width="16" height="16" fill="currentColor" viewBox="0 0 20 20"
+            >
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+          </div>
+
+          {/* Action buttons */}
+          <div className="space-y-2">
+            {MOBILE_ACTIONS.map((action, idx) => {
+              const inner = (
+                <div
+                  key={idx}
+                  className="w-full flex items-center justify-between px-4 rounded-xl border shadow-sm"
+                  style={{
+                    height: '56px',
+                    backgroundColor: action.grayed ? '#f9fafb' : 'white',
+                    borderColor: action.grayed ? '#e5e7eb' : '#e5e7eb',
+                    color: action.grayed ? '#9ca3af' : '#374151',
+                    cursor: action.href || !action.grayed ? 'pointer' : 'default',
+                  }}
+                >
+                  <span className="text-sm font-medium">{action.label}</span>
+                  <span className="text-xl">{action.icon}</span>
+                </div>
+              )
+
+              if (action.href) {
+                return (
+                  <Link key={idx} href={action.href} className="block">
+                    {inner}
+                  </Link>
+                )
+              }
+              return (
+                <button
+                  key={idx}
+                  className="w-full text-right"
+                  onClick={() => !action.grayed && alert(`${action.label} - בקרוב`)}
+                  disabled={action.grayed}
+                >
+                  {inner}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ─────────────── DESKTOP LAYOUT (md and up) ─────────────── */}
+        <main className="hidden md:block max-w-7xl mx-auto px-4 py-5">
           {/* Two-column layout */}
           <div className="flex gap-4" style={{ alignItems: 'flex-start' }}>
 
@@ -225,7 +355,6 @@ export default function Dashboard() {
                   פעולות נפוצות
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {/* Action: Treatment types */}
                   <button
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group"
                     onClick={() => alert('סוגי טיפולים - בקרוב')}
@@ -234,7 +363,6 @@ export default function Dashboard() {
                     <span className="text-sm text-gray-600 group-hover:text-teal-700 font-medium text-center">סוגי טיפולים</span>
                   </button>
 
-                  {/* Action: Settings */}
                   <button
                     className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group"
                     onClick={() => alert('הגדרות - בקרוב')}
@@ -243,7 +371,6 @@ export default function Dashboard() {
                     <span className="text-sm text-gray-600 group-hover:text-teal-700 font-medium text-center">הגדרות</span>
                   </button>
 
-                  {/* Action: Schedule in calendar */}
                   <Link href="/calendar" className="no-underline">
                     <button className="w-full flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group">
                       <span className="text-2xl">📅</span>
@@ -251,7 +378,6 @@ export default function Dashboard() {
                     </button>
                   </Link>
 
-                  {/* Action: Add patient */}
                   <Link href="/patients/new" className="no-underline">
                     <button className="w-full flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group">
                       <span className="text-2xl">👥</span>

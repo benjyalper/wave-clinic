@@ -24,6 +24,8 @@ model User {
   smsLoginAlert      Boolean          @default(true)
   drawingEnabled     Boolean          @default(false)
   bodyDiagramEnabled Boolean          @default(false)
+  licenseNumber      String           @default("")
+  businessLicense    String           @default("")
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   patients           Patient[]
@@ -31,6 +33,7 @@ model User {
   appointments       Appointment[]
   tasks              Task[]
   leads              Lead[]
+  invoices           Invoice[]
 }
 
 model Patient {
@@ -54,6 +57,7 @@ model Patient {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
+  invoices     Invoice[]
 
   @@index([userId])
 }
@@ -108,6 +112,31 @@ model Task {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model Invoice {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientId     Int
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  invoiceNumber Int
+  invoiceType   String    @default("חשבונית מס קבלה")
+  issueDate     DateTime  @default(now())
+  items         Json      // [{description, date, quantity, unitPrice, total}]
+  subtotal      Float
+  vatRate       Float     @default(17)
+  vatAmount     Float
+  total         Float
+  paymentMethod String    @default("מזומן")
+  paymentDate   DateTime?
+  notes         String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, invoiceNumber])
+  @@index([userId])
+  @@index([patientId])
 }
 
 model Lead {
