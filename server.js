@@ -33,6 +33,7 @@ try {
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
 const port = parseInt(process.env.PORT || '3000', 10)
+console.log(`PORT env = ${process.env.PORT}, using port = ${port}`)
 
 console.log(`Starting Next.js on ${hostname}:${port} (dev=${dev})`)
 
