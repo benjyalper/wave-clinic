@@ -2,6 +2,13 @@ const { execSync } = require('child_process')
 const { createServer } = require('http')
 const { parse } = require('url')
 
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err)
+})
+
 // Run prisma migrations
 try {
   console.log('Running database migrations...')
