@@ -11,12 +11,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('wave_logged_in') === 'true') {
+    if (typeof window !== 'undefined' && localStorage.getItem('wave_token')) {
       router.replace('/dashboard')
     }
   }, [router])
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!username.trim() || !password.trim()) {
       setError('נא למלא שם משתמש וסיסמה')
@@ -24,13 +24,26 @@ export default function LoginPage() {
     }
     setLoading(true)
     setError('')
-    setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('wave_logged_in', 'true')
-        localStorage.setItem('wave_user', username)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'שגיאה בכניסה')
+        setLoading(false)
+        return
       }
+      localStorage.setItem('wave_token', data.token)
+      localStorage.setItem('wave_user', data.user.username)
+      localStorage.setItem('wave_logged_in', 'true')
       router.push('/dashboard')
-    }, 600)
+    } catch {
+      setError('שגיאת רשת, נסה שוב')
+      setLoading(false)
+    }
   }
 
   return (
