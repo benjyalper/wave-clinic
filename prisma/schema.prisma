@@ -1,0 +1,126 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  email              String           @unique
+  username           String           @unique
+  passwordHash       String
+  businessName       String           @default("הקליניקה שלי")
+  phone              String           @default("")
+  smsSender          String           @default("")
+  calendarView       String           @default("מורחבת")
+  showShabbat        Boolean          @default(false)
+  twoFactor          Boolean          @default(false)
+  twoFactorMethod    String           @default("SMS")
+  markPaidInCalendar Boolean          @default(true)
+  smsLoginAlert      Boolean          @default(true)
+  drawingEnabled     Boolean          @default(false)
+  bodyDiagramEnabled Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  patients           Patient[]
+  treatmentTypes     TreatmentType[]
+  appointments       Appointment[]
+  tasks              Task[]
+  leads              Lead[]
+}
+
+model Patient {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName    String
+  lastName     String
+  phone        String
+  phoneAlt     String        @default("")
+  email        String        @default("")
+  birthDate    DateTime?
+  idNumber     String        @default("")
+  address      String        @default("")
+  hmo          String        @default("")
+  invoiceName  String        @default("")
+  gender       String        @default("male")
+  notes        String        @default("")
+  tags         String[]      @default([])
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+
+  @@index([userId])
+}
+
+model TreatmentType {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  duration     Int           // minutes
+  price        Float
+  color        String        @default("#3b82f6")
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+
+  @@index([userId])
+}
+
+model Appointment {
+  id              Int            @id @default(autoincrement())
+  userId          Int
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientId       Int
+  patient         Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatmentTypeId Int?
+  treatmentType   TreatmentType? @relation(fields: [treatmentTypeId], references: [id], onDelete: SetNull)
+  startTime       DateTime
+  endTime         DateTime
+  price           Float
+  paid            Boolean        @default(false)
+  paymentMethod   String         @default("") // מזומן, העברה, צ׳ק, etc.
+  invoiceNumber   String?
+  invoiceType     String         @default("") // חשבונית מס קבלה, קבלה, etc.
+  notes           String         @default("")
+  status          String         @default("scheduled") // scheduled, completed, cancelled
+  rescheduleCount Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([patientId])
+  @@index([startTime])
+}
+
+model Task {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Lead {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String   @default("")
+  email     String   @default("")
+  notes     String   @default("")
+  status    String   @default("new") // new, contacted, converted, lost
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
