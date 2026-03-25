@@ -159,6 +159,26 @@ function TimePickerInput({ value, onChange, style }: {
   const wrapRef = useRef<HTMLDivElement>(null)
   const hourRef = useRef<HTMLDivElement>(null)
   const minRef  = useRef<HTMLDivElement>(null)
+  const hourTimer = useRef<any>(null)
+  const minTimer  = useRef<any>(null)
+
+  const handleHourScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    clearTimeout(hourTimer.current)
+    hourTimer.current = setTimeout(() => {
+      const idx = Math.round(el.scrollTop / ITEM_H)
+      setTempH(Math.max(0, Math.min(23, idx)))
+    }, 80)
+  }
+
+  const handleMinScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    clearTimeout(minTimer.current)
+    minTimer.current = setTimeout(() => {
+      const idx = Math.round(el.scrollTop / ITEM_H)
+      setTempM(MINS[Math.max(0, Math.min(MINS.length - 1, idx))])
+    }, 80)
+  }
 
   // when picker opens, parse current value and scroll columns to it
   useEffect(() => {
@@ -241,9 +261,12 @@ function TimePickerInput({ value, onChange, style }: {
           {/* Scroll columns */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px', direction:'ltr' }}>
             {/* Hours */}
-            <div ref={hourRef} style={colBox}>
+            <div ref={hourRef} style={colBox} onScroll={handleHourScroll}>
               {Array.from({length:24},(_,i)=>(
-                <div key={i} style={itemBase(tempH===i)} onClick={()=>setTempH(i)}>
+                <div key={i} style={itemBase(tempH===i)} onClick={()=>{
+                  setTempH(i)
+                  if(hourRef.current) hourRef.current.scrollTop = i * ITEM_H
+                }}>
                   {String(i).padStart(2,'0')}
                 </div>
               ))}
@@ -252,9 +275,12 @@ function TimePickerInput({ value, onChange, style }: {
             <span style={{ fontSize:'22px', fontWeight:700, color:'#374151', lineHeight:1 }}>:</span>
 
             {/* Minutes (5-min steps) */}
-            <div ref={minRef} style={colBox}>
-              {MINS.map(m=>(
-                <div key={m} style={itemBase(tempM===m)} onClick={()=>setTempM(m)}>
+            <div ref={minRef} style={colBox} onScroll={handleMinScroll}>
+              {MINS.map((m,mi)=>(
+                <div key={m} style={itemBase(tempM===m)} onClick={()=>{
+                  setTempM(m)
+                  if(minRef.current) minRef.current.scrollTop = mi * ITEM_H
+                }}>
                   {String(m).padStart(2,'0')}
                 </div>
               ))}
