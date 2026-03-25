@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import ReactDOM from 'react-dom'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import AppHeader from '../components/AppHeader'
@@ -146,9 +147,9 @@ const labelStyle: React.CSSProperties = {
 // ─── TimePickerInput ─────────────────────────────────────────────────────────
 
 const MINS = [0,5,10,15,20,25,30,35,40,45,50,55]
-const ITEM_H = 48   // px per row
-const VISIBLE = 5   // rows visible (odd → middle row = selection)
-const PAD = 2       // blank rows above/below so first/last items can reach center
+const ITEM_H = 48
+const VISIBLE = 5
+const PAD = 2
 
 function TimePickerInput({ value, onChange, style }: {
   value: string
@@ -156,13 +157,21 @@ function TimePickerInput({ value, onChange, style }: {
   style?: React.CSSProperties
 }) {
   const [open, setOpen] = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const hourRef = useRef<HTMLDivElement>(null)
-  const minRef  = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0, minWidth: 0 })
+  const wrapRef  = useRef<HTMLDivElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+  const hourRef  = useRef<HTMLDivElement>(null)
+  const minRef   = useRef<HTMLDivElement>(null)
 
-  // When picker opens, scroll to reflect current value
+  // Capture button position + scroll drums to current value
   useEffect(() => {
     if (!open) return
+    if (wrapRef.current) {
+      const r = wrapRef.current.getBoundingClientRect()
+      const popupH = ITEM_H * VISIBLE + 90
+      const top = r.bottom + 4 + popupH > window.innerHeight ? r.top - popupH - 4 : r.bottom + 4
+      setPos({ top, left: r.left, minWidth: r.width })
+    }
     const [hh, mm] = value.split(':').map(Number)
     const h = isNaN(hh) ? 8 : Math.max(0, Math.min(23, hh))
     const rawM = isNaN(mm) ? 0 : mm
@@ -173,19 +182,24 @@ function TimePickerInput({ value, onChange, style }: {
     }, 30)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close on outside click
+  // Close on outside click/touch
   useEffect(() => {
     if (!open) return
-    const fn = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    function onDown(e: MouseEvent | TouchEvent) {
+      const target = (e as MouseEvent).target as Node
+      if (wrapRef.current?.contains(target) || popupRef.current?.contains(target)) return
+      setOpen(false)
     }
-    document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('touchstart', onDown as any, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('touchstart', onDown as any)
+    }
   }, [open])
 
-  // Read scroll position directly from DOM — always accurate
   function confirm() {
-    const h   = Math.max(0, Math.min(23,           Math.round((hourRef.current?.scrollTop ?? 0) / ITEM_H)))
+    const h    = Math.max(0, Math.min(23,            Math.round((hourRef.current?.scrollTop ?? 0) / ITEM_H)))
     const mIdx = Math.max(0, Math.min(MINS.length-1, Math.round((minRef.current?.scrollTop  ?? 0) / ITEM_H)))
     onChange(`${String(h).padStart(2,'0')}:${String(MINS[mIdx]).padStart(2,'0')}`)
     setOpen(false)
@@ -196,129 +210,113 @@ function TimePickerInput({ value, onChange, style }: {
     overflowY: 'scroll',
     width: '62px',
     scrollSnapType: 'y mandatory',
-    position: 'relative',
-    borderRadius: '8px',
-    border: '1px solid #e5e7eb',
+    WebkitOverflowScrolling: 'touch' as any,
+    scrollbarWidth: 'none' as any,
   }
-
   const itemStyle: React.CSSProperties = {
     height: `${ITEM_H}px`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     scrollSnapAlign: 'start',
-    fontSize: '22px', fontWeight: 700,
-    color: '#374151', userSelect: 'none', cursor: 'pointer',
-    flexShrink: 0,
+    fontSize: '22px', fontWeight: 700, color: '#1f2937',
+    cursor: 'pointer', fontFamily: 'monospace', userSelect: 'none',
+    touchAction: 'pan-y',
   }
-
   const padStyle: React.CSSProperties = { height: `${ITEM_H * PAD}px`, flexShrink: 0 }
 
-  // Hours array: PAD blanks + 00–23 + PAD blanks
   const hourItems = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
-  // Minutes array: PAD blanks + 00,05,…,55 + PAD blanks
   const minItems  = MINS.map(m => String(m).padStart(2, '0'))
+
+  function snapOnScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget
+    clearTimeout((el as any)._t)
+    ;(el as any)._t = setTimeout(() => {
+      const idx = Math.round(el.scrollTop / ITEM_H)
+      el.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+    }, 120)
+  }
+
+  const popup = (
+    <div ref={popupRef} style={{
+      position: 'fixed',
+      top: `${pos.top}px`,
+      left: `${pos.left}px`,
+      minWidth: `${Math.max(pos.minWidth, 170)}px`,
+      zIndex: 99999,
+      backgroundColor: 'white',
+      border: '1px solid #e5e7eb',
+      borderRadius: '12px',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
+      padding: '14px 12px 12px',
+    }}>
+      <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'6px', direction:'ltr' }}>
+        <span style={{ width:'62px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>שעה</span>
+        <span style={{ width:'18px' }} />
+        <span style={{ width:'62px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>דקות</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px', direction:'ltr' }}>
+        <div style={{ position:'relative' }}>
+          <div style={{ position:'absolute', top:`${PAD*ITEM_H}px`, left:0, right:0,
+            height:`${ITEM_H}px`, backgroundColor:'rgba(13,148,136,0.12)',
+            borderTop:'2px solid #0d9488', borderBottom:'2px solid #0d9488',
+            pointerEvents:'none', borderRadius:'4px', zIndex:1 }} />
+          <div ref={hourRef} style={colStyle} onScroll={snapOnScroll}>
+            <div style={padStyle} />
+            {hourItems.map((h, i) => (
+              <div key={i} style={itemStyle}
+                onMouseDown={e => { e.preventDefault(); hourRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' }) }}
+                onTouchEnd={e => { e.preventDefault(); hourRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' }) }}>
+                {h}
+              </div>
+            ))}
+            <div style={padStyle} />
+          </div>
+        </div>
+        <span style={{ fontSize:'24px', fontWeight:700, color:'#374151', lineHeight:1 }}>:</span>
+        <div style={{ position:'relative' }}>
+          <div style={{ position:'absolute', top:`${PAD*ITEM_H}px`, left:0, right:0,
+            height:`${ITEM_H}px`, backgroundColor:'rgba(13,148,136,0.12)',
+            borderTop:'2px solid #0d9488', borderBottom:'2px solid #0d9488',
+            pointerEvents:'none', borderRadius:'4px', zIndex:1 }} />
+          <div ref={minRef} style={colStyle} onScroll={snapOnScroll}>
+            <div style={padStyle} />
+            {minItems.map((m, i) => (
+              <div key={i} style={itemStyle}
+                onMouseDown={e => { e.preventDefault(); minRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' }) }}
+                onTouchEnd={e => { e.preventDefault(); minRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' }) }}>
+                {m}
+              </div>
+            ))}
+            <div style={padStyle} />
+          </div>
+        </div>
+      </div>
+      <div style={{ display:'flex', gap:'8px' }}>
+        <button type="button" onClick={confirm} style={{
+          flex:1, backgroundColor:'#0d9488', color:'white', border:'none',
+          borderRadius:'8px', padding:'10px', fontSize:'14px', fontWeight:700,
+          cursor:'pointer', fontFamily:"'Rubik',sans-serif", touchAction:'manipulation',
+        }}>✓ אישור</button>
+        <button type="button" onClick={() => setOpen(false)} style={{
+          padding:'10px 14px', backgroundColor:'#f3f4f6', color:'#374151',
+          border:'none', borderRadius:'8px', fontSize:'13px',
+          cursor:'pointer', fontFamily:"'Rubik',sans-serif", touchAction:'manipulation',
+        }}>ביטול</button>
+      </div>
+    </div>
+  )
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', ...style }}>
-      {/* Trigger button */}
       <button type="button" onClick={() => setOpen(v => !v)} style={{
         width:'100%', padding:'8px 12px', border:'1px solid #d1d5db',
         borderRadius:'6px', fontSize:'15px', fontWeight:600, letterSpacing:'2px',
         color:'#1f2937', backgroundColor:'white', cursor:'pointer',
         fontFamily:'monospace', textAlign:'center', boxSizing:'border-box',
+        touchAction:'manipulation',
       }}>
         {value || '--:--'}
       </button>
-
-      {open && (
-        <div style={{
-          position:'absolute', top:'calc(100% + 4px)', left:0, right:0,
-          zIndex:1200, backgroundColor:'white',
-          border:'1px solid #e5e7eb', borderRadius:'12px',
-          boxShadow:'0 8px 32px rgba(0,0,0,0.18)',
-          padding:'14px 12px 12px', minWidth:'170px',
-        }}>
-          {/* Column headers */}
-          <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'6px', direction:'ltr' }}>
-            <span style={{ width:'62px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>שעה</span>
-            <span style={{ width:'18px' }} />
-            <span style={{ width:'62px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>דקות</span>
-          </div>
-
-          {/* Drums */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px', direction:'ltr' }}>
-
-            {/* Hours drum */}
-            <div style={{ position:'relative' }}>
-              {/* Selection highlight bar */}
-              <div style={{ position:'absolute', top:`${PAD*ITEM_H}px`, left:0, right:0,
-                height:`${ITEM_H}px`, backgroundColor:'rgba(13,148,136,0.12)',
-                borderTop:'2px solid #0d9488', borderBottom:'2px solid #0d9488',
-                pointerEvents:'none', borderRadius:'4px', zIndex:1 }} />
-              <div ref={hourRef} style={colStyle}
-                onScroll={e => {
-                  // snap helper: after momentum, align to nearest
-                  const el = e.currentTarget
-                  clearTimeout((el as any)._t)
-                  ;(el as any)._t = setTimeout(() => {
-                    const idx = Math.round(el.scrollTop / ITEM_H)
-                    el.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
-                  }, 120)
-                }}>
-                <div style={padStyle} />
-                {hourItems.map((h, i) => (
-                  <div key={i} style={itemStyle}
-                    onClick={() => hourRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' })}>
-                    {h}
-                  </div>
-                ))}
-                <div style={padStyle} />
-              </div>
-            </div>
-
-            <span style={{ fontSize:'24px', fontWeight:700, color:'#374151', lineHeight:1, marginBottom:`${PAD*2}px` }}>:</span>
-
-            {/* Minutes drum */}
-            <div style={{ position:'relative' }}>
-              <div style={{ position:'absolute', top:`${PAD*ITEM_H}px`, left:0, right:0,
-                height:`${ITEM_H}px`, backgroundColor:'rgba(13,148,136,0.12)',
-                borderTop:'2px solid #0d9488', borderBottom:'2px solid #0d9488',
-                pointerEvents:'none', borderRadius:'4px', zIndex:1 }} />
-              <div ref={minRef} style={colStyle}
-                onScroll={e => {
-                  const el = e.currentTarget
-                  clearTimeout((el as any)._t)
-                  ;(el as any)._t = setTimeout(() => {
-                    const idx = Math.round(el.scrollTop / ITEM_H)
-                    el.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
-                  }, 120)
-                }}>
-                <div style={padStyle} />
-                {minItems.map((m, i) => (
-                  <div key={i} style={itemStyle}
-                    onClick={() => minRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' })}>
-                    {m}
-                  </div>
-                ))}
-                <div style={padStyle} />
-              </div>
-            </div>
-          </div>
-
-          {/* Confirm / Cancel */}
-          <div style={{ display:'flex', gap:'8px' }}>
-            <button type="button" onClick={confirm} style={{
-              flex:1, backgroundColor:'#0d9488', color:'white', border:'none',
-              borderRadius:'8px', padding:'10px', fontSize:'14px', fontWeight:700,
-              cursor:'pointer', fontFamily:"'Rubik',sans-serif",
-            }}>✓ אישור</button>
-            <button type="button" onClick={() => setOpen(false)} style={{
-              padding:'10px 14px', backgroundColor:'#f3f4f6', color:'#374151',
-              border:'none', borderRadius:'8px', fontSize:'13px',
-              cursor:'pointer', fontFamily:"'Rubik',sans-serif",
-            }}>ביטול</button>
-          </div>
-        </div>
-      )}
+      {open && typeof window !== 'undefined' && ReactDOM.createPortal(popup, document.body)}
     </div>
   )
 }
@@ -803,14 +801,14 @@ export default function CalendarPage() {
                     const isHour=slot.endsWith(':00')
                     return(
                       <div key={slot} style={{display:'grid',gridTemplateColumns:'40px repeat(6,minmax(60px,1fr))',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
-                        <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #e5e7eb':'1px solid #f3f4f6',paddingRight:'4px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
+                        <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',paddingRight:'4px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
                           {isHour&&<span className="text-xs text-gray-400 font-medium">{slot}</span>}
                         </div>
                         {weekDays.map((day,colIdx)=>{
                           const isToday=isSameDay(day,today)
                           return(
                             <div key={colIdx}
-                              style={{borderLeft:colIdx<5?'1px solid #e5e7eb':'none',borderBottom:isHour?'1px solid #e5e7eb':'1px solid #f9fafb',backgroundColor:isToday?'rgba(255,255,240,0.8)':'transparent',cursor:'pointer'}}
+                              style={{borderLeft:colIdx<5?'1px solid #e5e7eb':'none',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',backgroundColor:isToday?'rgba(255,255,240,0.8)':'transparent',cursor:'pointer'}}
                               onMouseEnter={e=>{if(!isToday)(e.currentTarget as HTMLDivElement).style.backgroundColor='#f0faf9'}}
                               onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.backgroundColor=isToday?'rgba(255,255,240,0.8)':'transparent'}}
                               onClick={()=>openModal(toDateKey(day),slot)}
@@ -866,10 +864,10 @@ export default function CalendarPage() {
                     const isHour=slot.endsWith(':00')
                     return(
                       <div key={slot} style={{display:'grid',gridTemplateColumns:'56px 1fr',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
-                        <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #e5e7eb':'1px solid #f3f4f6',paddingRight:'6px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
+                        <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',paddingRight:'6px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
                           {isHour&&<span className="text-xs text-gray-400 font-medium">{slot}</span>}
                         </div>
-                        <div style={{borderBottom:isHour?'1px solid #e5e7eb':'1px solid #f9fafb',backgroundColor:isSameDay(weekDays[0],today)?'rgba(255,255,240,0.8)':'transparent',cursor:'pointer'}}
+                        <div style={{borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',backgroundColor:isSameDay(weekDays[0],today)?'rgba(255,255,240,0.8)':'transparent',cursor:'pointer'}}
                           onClick={()=>openModal(toDateKey(weekDays[0]),slot)}/>
                       </div>
                     )

@@ -74,6 +74,7 @@ export default function AppHeader() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileDotsOpen, setMobileDotsOpen] = useState(false)
+  const [mobileReportsOpen, setMobileReportsOpen] = useState(false)
   const [searchVal, setSearchVal] = useState('')
   const [searchResults, setSearchResults] = useState<Array<{id:number;firstName:string;lastName:string;phone:string;idNumber:string}>>([])
   const [searchOpen, setSearchOpen] = useState(false)
@@ -393,33 +394,84 @@ export default function AppHeader() {
           {/* Three-dot menu */}
           <div ref={dotsRef} className="relative">
             <button
-              onClick={() => setMobileDotsOpen(!mobileDotsOpen)}
+              onClick={() => { setMobileDotsOpen(!mobileDotsOpen); setMobileReportsOpen(false) }}
               className="p-2 rounded hover:bg-white/10 transition-colors text-white text-xl leading-none"
               aria-label="עוד"
             >
               ⋮
             </button>
             {mobileDotsOpen && (
-              <div
-                className="absolute top-full left-0 bg-white shadow-xl rounded-xl py-2 z-50 min-w-[160px]"
-                style={{ direction: 'rtl' }}
-              >
-                <Link href="/reports/patients">
+              <div style={{ position:'absolute', top:'100%', left:0, zIndex:200, display:'flex', gap:0, direction:'rtl' }}>
+                {/* Main menu */}
+                <div style={{ backgroundColor:'white', borderRadius:'12px', boxShadow:'0 8px 32px rgba(0,0,0,0.18)', minWidth:'180px', paddingTop:'6px', paddingBottom:'6px', border:'1px solid #f0f0f0' }}>
+                  {[
+                    { icon:'📅+', label:'קביעה מהירה', href:'/calendar' },
+                    { icon:'👤', label:'לידים', href:null },
+                    { icon:'✕', label:'מחיקת תורים מרובים', href:null },
+                    { icon:'⚙️', label:'הגדרות', href:'/settings/user' },
+                  ].map(item => (
+                    item.href ? (
+                      <Link key={item.label} href={item.href}>
+                        <div className="flex items-center justify-end gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
+                          onClick={() => setMobileDotsOpen(false)}>
+                          <span className="font-medium">{item.label}</span>
+                          <span className="w-5 text-center text-base">{item.icon}</span>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div key={item.label} className="flex items-center justify-end gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
+                        onClick={() => { setMobileDotsOpen(false) }}>
+                        <span className="font-medium">{item.label}</span>
+                        <span className="w-5 text-center text-base">{item.icon}</span>
+                      </div>
+                    )
+                  ))}
+                  {/* דוחות with flyout */}
                   <div
-                    className="px-4 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer text-sm flex items-center gap-2"
-                    onClick={() => setMobileDotsOpen(false)}
+                    className="flex items-center justify-end gap-3 px-4 py-3 cursor-pointer text-sm"
+                    style={{ backgroundColor: mobileReportsOpen ? '#f0fdf4' : 'white', color:'#374151' }}
+                    onClick={() => setMobileReportsOpen(v => !v)}
                   >
-                    <span>📊</span> דוחות
+                    <span className="font-medium">דוחות</span>
+                    <span className="w-5 text-center text-base">📊</span>
                   </div>
-                </Link>
-                <Link href="/settings/user">
-                  <div
-                    className="px-4 py-3 text-gray-700 hover:bg-gray-50 cursor-pointer text-sm flex items-center gap-2"
-                    onClick={() => setMobileDotsOpen(false)}
-                  >
-                    <span>⚙️</span> הגדרות
+                  <hr style={{ margin:'4px 12px', border:'none', borderTop:'1px solid #f3f4f6' }} />
+                  {[
+                    { label:'תמיכה', href:null },
+                    { label:'מדריך שימוש', href:null },
+                  ].map(item => (
+                    <div key={item.label} className="flex items-center justify-end gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
+                      onClick={() => setMobileDotsOpen(false)}>
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-end gap-3 px-4 py-3 cursor-pointer text-sm"
+                    style={{ color:'#ef4444' }}
+                    onClick={() => { setMobileDotsOpen(false); handleLogout() }}>
+                    <span className="font-medium">ניתוק</span>
                   </div>
-                </Link>
+                </div>
+
+                {/* Reports flyout (appears to the right of main menu in LTR, but since we're in RTL visual it appears on left) */}
+                {mobileReportsOpen && (
+                  <div style={{ backgroundColor:'white', borderRadius:'12px', boxShadow:'0 8px 32px rgba(0,0,0,0.18)', minWidth:'160px', paddingTop:'6px', paddingBottom:'6px', border:'1px solid #f0f0f0', marginLeft:'4px', maxHeight:'70vh', overflowY:'auto' }}>
+                    {REPORTS_ITEMS.map(item => (
+                      item.href === '#' ? (
+                        <div key={item.label} className="px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm text-right"
+                          onClick={() => { setMobileDotsOpen(false); setMobileReportsOpen(false) }}>
+                          {item.label}
+                        </div>
+                      ) : (
+                        <Link key={item.label} href={item.href}>
+                          <div className="px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm text-right"
+                            onClick={() => { setMobileDotsOpen(false); setMobileReportsOpen(false) }}>
+                            {item.label}
+                          </div>
+                        </Link>
+                      )
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
