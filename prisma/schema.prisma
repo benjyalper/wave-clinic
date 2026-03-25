@@ -34,6 +34,7 @@ model User {
   tasks              Task[]
   leads              Lead[]
   invoices           Invoice[]
+  treatmentNotes     TreatmentNote[]
 }
 
 model Patient {
@@ -52,14 +53,29 @@ model Patient {
   invoiceName  String        @default("")
   gender       String        @default("male")
   notes        String        @default("")
-  tags         String[]      @default([])
-  active       Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  appointments Appointment[]
-  invoices     Invoice[]
+  tags            String[]        @default([])
+  active          Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  appointments    Appointment[]
+  invoices        Invoice[]
+  treatmentNotes  TreatmentNote[]
 
   @@index([userId])
+}
+
+model TreatmentNote {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientId Int
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  content   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([patientId])
 }
 
 model TreatmentType {
