@@ -13,6 +13,7 @@ function clearSession() {
   localStorage.removeItem('wave_token')
   localStorage.removeItem('wave_logged_in')
   localStorage.removeItem('wave_user')
+  localStorage.removeItem('wave_last_activity')
   sessionStorage.removeItem('wave_session_active')
 }
 
@@ -38,6 +39,8 @@ function SessionGuard() {
     if (warningRef.current) clearTimeout(warningRef.current)
     if (countdownRef.current) clearInterval(countdownRef.current)
     setShowWarning(false)
+    // Keep last-activity fresh for standalone PWA session check
+    localStorage.setItem('wave_last_activity', String(Date.now()))
 
     // Show warning 60s before logout
     warningRef.current = setTimeout(() => {
@@ -61,10 +64,32 @@ function SessionGuard() {
   }, [isAuthPage, logout])
 
   // Check browser-close: if token exists but session flag is gone → new browser session
+  // Also check standalone PWA: sessionStorage persists on iOS PWA, so use last-activity timestamp
   useEffect(() => {
     if (isAuthPage) return
     const token = localStorage.getItem('wave_token')
     const sessionActive = sessionStorage.getItem('wave_session_active')
+
+    // Standalone PWA on iOS keeps sessionStorage alive between launches —
+    // detect it and verify last-activity timestamp instead
+    const isStandalone =
+      typeof window !== 'undefined' &&
+      ((window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+        window.matchMedia('(display-mode: standalone)').matches)
+
+    if (isStandalone && token) {
+      const lastActivity = localStorage.getItem('wave_last_activity')
+      if (!lastActivity || Date.now() - Number(lastActivity) > INACTIVITY_MS) {
+        clearSession()
+        router.replace('/')
+        return
+      }
+      // Session is still fresh — ensure sessionStorage flag is set
+      sessionStorage.setItem('wave_session_active', 'true')
+      return
+    }
+
+    // Normal browser: tab/window close clears sessionStorage
     if (token && !sessionActive) {
       clearSession()
       router.replace('/')

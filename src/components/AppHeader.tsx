@@ -125,7 +125,7 @@ export default function AppHeader() {
       {/* ─────────────── DESKTOP HEADER (md and up) ─────────────── */}
       <header
         style={{ backgroundColor: '#2c3444', direction: 'rtl' }}
-        className="hidden md:flex text-white items-center px-4 py-2 gap-3 shadow-md relative z-50"
+        className="hidden md:flex text-white items-center px-4 py-2 gap-3 shadow-md sticky top-0 z-50"
       >
         {/* Right side: clock + hamburger + dropdowns */}
         <div className="flex items-center gap-3 flex-shrink-0">
@@ -311,7 +311,7 @@ export default function AppHeader() {
       {/* ─────────────── MOBILE HEADER (below md) ─────────────── */}
       <header
         style={{ height: '56px', backgroundColor: '#2c3444' }}
-        className="md:hidden flex items-center justify-between px-3 shadow-md relative z-50"
+        className="md:hidden flex items-center justify-between px-3 shadow-md sticky top-0 z-50"
         dir="rtl"
       >
         {/* Right: hamburger */}

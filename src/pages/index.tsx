@@ -46,6 +46,7 @@ export default function LoginPage() {
       localStorage.setItem('wave_token', data.token)
       localStorage.setItem('wave_user', data.user.username)
       localStorage.setItem('wave_logged_in', 'true')
+      localStorage.setItem('wave_last_activity', String(Date.now()))
       sessionStorage.setItem('wave_session_active', 'true')
       router.push('/dashboard')
     } catch {

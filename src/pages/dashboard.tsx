@@ -108,7 +108,7 @@ export default function Dashboard() {
       <Head>
         <title>Wave - לוח בקרה</title>
       </Head>
-      <div dir="rtl" style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Rubik', sans-serif" }}>
+      <div dir="rtl" style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Rubik', sans-serif", overflowX: 'hidden', maxWidth: '100vw' }}>
         <AppHeader />
 
         {/* ─────────────── MOBILE LAYOUT (below md) ─────────────── */}

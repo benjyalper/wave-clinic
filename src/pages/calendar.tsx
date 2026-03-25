@@ -81,6 +81,45 @@ function getMonthGrid(year:number, month:number) {
   }
   return rows
 }
+// ─── overlap layout ──────────────────────────────────────────────────────────
+// Returns each appointment annotated with colIndex (0 = rightmost) and colCount
+function computeOverlapLayout(appts: Appointment[]): { appt: Appointment; colIndex: number; colCount: number }[] {
+  if (!appts.length) return []
+  const sorted = [...appts].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+  const assigned: { appt: Appointment; colIndex: number }[] = []
+  const columns: number[][] = [] // each entry = list of indices into `assigned`
+
+  for (const appt of sorted) {
+    const startMs = new Date(appt.startTime).getTime()
+    let placed = false
+    for (let ci = 0; ci < columns.length; ci++) {
+      const lastIdx = columns[ci][columns[ci].length - 1]
+      if (new Date(assigned[lastIdx].appt.endTime).getTime() <= startMs) {
+        columns[ci].push(assigned.length)
+        assigned.push({ appt, colIndex: ci })
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      columns.push([assigned.length])
+      assigned.push({ appt, colIndex: columns.length - 1 })
+    }
+  }
+
+  return assigned.map(item => {
+    const startMs = new Date(item.appt.startTime).getTime()
+    const endMs = new Date(item.appt.endTime).getTime()
+    const overlapping = assigned.filter(other => {
+      const os = new Date(other.appt.startTime).getTime()
+      const oe = new Date(other.appt.endTime).getTime()
+      return os < endMs && oe > startMs
+    })
+    const colCount = Math.max(...overlapping.map(o => o.colIndex)) + 1
+    return { appt: item.appt, colIndex: item.colIndex, colCount }
+  })
+}
+
 function addMinutes(time:string, minutes:number) {
   const [h,m]=time.split(':').map(Number); const total=h*60+m+minutes
   return `${String(Math.min(Math.floor(total/60),23)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
@@ -102,6 +141,153 @@ const inputStyle: React.CSSProperties = {
 }
 const labelStyle: React.CSSProperties = {
   display:'block', fontSize:'13px', fontWeight:600, color:'#374151', marginBottom:'6px'
+}
+
+// ─── TimePickerInput ─────────────────────────────────────────────────────────
+
+const MINS = [0,5,10,15,20,25,30,35,40,45,50,55]
+const ITEM_H = 44
+
+function TimePickerInput({ value, onChange, style }: {
+  value: string
+  onChange: (v: string) => void
+  style?: React.CSSProperties
+}) {
+  const [open, setOpen] = useState(false)
+  const [tempH, setTempH] = useState(0)
+  const [tempM, setTempM] = useState(0)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const hourRef = useRef<HTMLDivElement>(null)
+  const minRef  = useRef<HTMLDivElement>(null)
+
+  // when picker opens, parse current value and scroll columns to it
+  useEffect(() => {
+    if (!open) return
+    const [hh, mm] = value.split(':').map(Number)
+    const h = isNaN(hh) ? 0 : hh
+    const m = isNaN(mm) ? 0 : Math.round(mm / 5) * 5 % 60
+    setTempH(h)
+    setTempM(m)
+    setTimeout(() => {
+      if (hourRef.current) hourRef.current.scrollTop = h * ITEM_H
+      const mIdx = MINS.indexOf(m)
+      if (minRef.current) minRef.current.scrollTop = (mIdx >= 0 ? mIdx : 0) * ITEM_H
+    }, 40)
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // close on outside click
+  useEffect(() => {
+    if (!open) return
+    const fn = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [open])
+
+  function confirm() {
+    onChange(`${String(tempH).padStart(2,'0')}:${String(tempM).padStart(2,'0')}`)
+    setOpen(false)
+  }
+
+  const colBox: React.CSSProperties = {
+    height: `${ITEM_H * 4}px`, overflowY: 'auto', width: '54px',
+    border: '1px solid #e5e7eb', borderRadius: '8px',
+    scrollSnapType: 'y mandatory',
+  }
+  const itemBase = (selected: boolean): React.CSSProperties => ({
+    height: `${ITEM_H}px`, display:'flex', alignItems:'center', justifyContent:'center',
+    scrollSnapAlign: 'start', cursor: 'pointer', fontSize: '20px', fontWeight: 600,
+    userSelect: 'none',
+    backgroundColor: selected ? '#0d9488' : 'transparent',
+    color: selected ? 'white' : '#374151',
+    transition: 'background-color 0.12s',
+  })
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', ...style }}>
+      {/* Display button */}
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width:'100%', padding:'8px 12px', border:'1px solid #d1d5db',
+          borderRadius:'6px', fontSize:'15px', fontWeight:600, letterSpacing:'2px',
+          color:'#1f2937', backgroundColor:'white', cursor:'pointer',
+          fontFamily:'monospace', textAlign:'center',
+          boxSizing:'border-box',
+        }}
+      >
+        {value || '--:--'}
+      </button>
+
+      {/* Dropdown picker */}
+      {open && (
+        <div style={{
+          position:'absolute', top:'calc(100% + 4px)', left:0, right:0,
+          zIndex:1200, backgroundColor:'white',
+          border:'1px solid #e5e7eb', borderRadius:'12px',
+          boxShadow:'0 8px 32px rgba(0,0,0,0.18)',
+          padding:'14px 12px 12px',
+          minWidth:'160px',
+        }}>
+          {/* Column headers */}
+          <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'6px' }}>
+            <span style={{ width:'54px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>שעה</span>
+            <span style={{ width:'14px' }} />
+            <span style={{ width:'54px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>דקות</span>
+          </div>
+
+          {/* Scroll columns */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px' }}>
+            {/* Hours */}
+            <div ref={hourRef} style={colBox}>
+              {Array.from({length:24},(_,i)=>(
+                <div key={i} style={itemBase(tempH===i)} onClick={()=>setTempH(i)}>
+                  {String(i).padStart(2,'0')}
+                </div>
+              ))}
+            </div>
+
+            <span style={{ fontSize:'22px', fontWeight:700, color:'#374151', lineHeight:1 }}>:</span>
+
+            {/* Minutes (5-min steps) */}
+            <div ref={minRef} style={colBox}>
+              {MINS.map(m=>(
+                <div key={m} style={itemBase(tempM===m)} onClick={()=>setTempM(m)}>
+                  {String(m).padStart(2,'0')}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Confirm / Cancel */}
+          <div style={{ display:'flex', gap:'8px' }}>
+            <button
+              type="button" onClick={confirm}
+              style={{
+                flex:1, backgroundColor:'#0d9488', color:'white', border:'none',
+                borderRadius:'8px', padding:'10px', fontSize:'14px', fontWeight:700,
+                cursor:'pointer', fontFamily:"'Rubik',sans-serif",
+              }}
+            >
+              ✓ אישור
+            </button>
+            <button
+              type="button" onClick={()=>setOpen(false)}
+              style={{
+                padding:'10px 14px', backgroundColor:'#f3f4f6', color:'#374151',
+                border:'none', borderRadius:'8px', fontSize:'13px',
+                cursor:'pointer', fontFamily:"'Rubik',sans-serif",
+              }}
+            >
+              ביטול
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -397,6 +583,7 @@ export default function CalendarPage() {
         boxShadow:'0 -4px 32px rgba(0,0,0,0.15)',
         fontFamily:"'Rubik',sans-serif",
         overflowY:'auto',
+        overflowX:'hidden',
         maxHeight:isMobile?'92vh':'90vh',
         display:'flex',flexDirection:'column',
       }}>
@@ -550,16 +737,21 @@ export default function CalendarPage() {
                               <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
                             </div>
                           )}
-                          {getApptBlocksForDay(day).map(appt=>(
-                            <ApptBlock key={appt.id} appt={appt} extraStyle={{
-                              position:'absolute',
-                              top:`${apptTopPx(appt.startTime)}px`,
-                              left:'2px',right:'2px',
-                              height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
-                              zIndex:5,
-                              pointerEvents:'auto', // only blocks are clickable, not empty column area
-                            }}/>
-                          ))}
+                          {computeOverlapLayout(getApptBlocksForDay(day)).map(({appt,colIndex,colCount})=>{
+                            const w = colCount > 1 ? 1/colCount : 1
+                            return (
+                              <ApptBlock key={appt.id} appt={appt} extraStyle={{
+                                position:'absolute',
+                                top:`${apptTopPx(appt.startTime)}px`,
+                                right:`calc(${colIndex/colCount*100}% + 1px)`,
+                                width:`calc(${w*100}% - 3px)`,
+                                height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
+                                zIndex:5,
+                                pointerEvents:'auto',
+                                borderRight: colCount > 1 && colIndex > 0 ? '2px solid rgba(255,255,255,0.6)' : undefined,
+                              }}/>
+                            )
+                          })}
                         </div>
                       )
                     })}
@@ -601,16 +793,21 @@ export default function CalendarPage() {
                           <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
                         </div>
                       )}
-                      {getApptBlocksForDay(weekDays[0]).map(appt=>(
-                        <ApptBlock key={appt.id} appt={appt} extraStyle={{
-                          position:'absolute',
-                          top:`${apptTopPx(appt.startTime)}px`,
-                          left:'4px',right:'4px',
-                          height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
-                          zIndex:5,
-                          pointerEvents:'auto',
-                        }}/>
-                      ))}
+                      {computeOverlapLayout(getApptBlocksForDay(weekDays[0])).map(({appt,colIndex,colCount})=>{
+                        const w = colCount > 1 ? 1/colCount : 1
+                        return (
+                          <ApptBlock key={appt.id} appt={appt} extraStyle={{
+                            position:'absolute',
+                            top:`${apptTopPx(appt.startTime)}px`,
+                            right:`calc(${colIndex/colCount*100}% + 2px)`,
+                            width:`calc(${w*100}% - 6px)`,
+                            height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
+                            zIndex:5,
+                            pointerEvents:'auto',
+                            borderRight: colCount > 1 && colIndex > 0 ? '2px solid rgba(255,255,255,0.6)' : undefined,
+                          }}/>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
@@ -690,13 +887,15 @@ export default function CalendarPage() {
               <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>שעת התחלה</label>
-                  <input type="time" value={modal.startTime}
-                    onChange={e=>{const t=e.target.value;setModal(m=>({...m,startTime:t,endTime:addMinutes(t,60)}))}}
-                    style={inputStyle}/>
+                  <TimePickerInput value={modal.startTime}
+                    onChange={t=>setModal(m=>({...m,startTime:t,endTime:addMinutes(t,60)}))}
+                    style={{width:'100%'}}/>
                 </div>
                 <div>
                   <label style={labelStyle}>שעת סיום</label>
-                  <input type="time" value={modal.endTime} onChange={e=>setModal(m=>({...m,endTime:e.target.value}))} style={inputStyle}/>
+                  <TimePickerInput value={modal.endTime}
+                    onChange={t=>setModal(m=>({...m,endTime:t}))}
+                    style={{width:'100%'}}/>
                 </div>
               </div>
               {/* notes */}
@@ -747,42 +946,40 @@ export default function CalendarPage() {
               </div>
 
               {/* phone actions row */}
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
-                <div style={{display:'flex',gap:'8px'}}>
-                  {/* phone icon */}
-                  <a href={`tel:${editModal.appt.patient.phone}`}
-                    style={{width:'36px',height:'36px',borderRadius:'50%',border:'1.5px solid #d1d5db',display:'flex',alignItems:'center',justifyContent:'center',color:'#374151',textDecoration:'none'}}
-                    title={editModal.appt.patient.phone}>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.86 2.18C1.08.98 2.12 0 3.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </a>
-                  {/* whatsapp icon */}
-                  <a href={`https://wa.me/972${editModal.appt.patient.phone.replace(/^0/,'').replace(/-/g,'')}`} target="_blank" rel="noreferrer"
-                    style={{width:'36px',height:'36px',borderRadius:'50%',border:'1.5px solid #25D366',display:'flex',alignItems:'center',justifyContent:'center',color:'#25D366',textDecoration:'none'}}
-                    title="WhatsApp">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.527 5.855L0 24l6.335-1.509A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.853 0-3.586-.5-5.075-1.373l-.363-.216-3.763.896.911-3.671-.237-.378A9.963 9.963 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
-                  </a>
-                </div>
-                {/* action buttons */}
-                <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
-                  <button onClick={()=>{closeEditModal();router.push(`/patients/${editModal.appt!.patient.id}`)}}
-                    style={{padding:'6px 12px',borderRadius:'7px',fontSize:'12px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600}}>לתיק האישי</button>
-                  <button style={{padding:'6px 12px',borderRadius:'7px',fontSize:'12px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600}}>לתשלום</button>
-                  <button onClick={()=>{closeEditModal();router.push(`/invoices/new?patientId=${editModal.appt!.patient.id}`)}}
-                    style={{padding:'6px 12px',borderRadius:'7px',fontSize:'12px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600}}>לחשבון הלקוח</button>
-                </div>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+                {/* phone icon */}
+                <a href={`tel:${editModal.appt.patient.phone}`}
+                  style={{width:'34px',height:'34px',borderRadius:'50%',border:'1.5px solid #d1d5db',display:'flex',alignItems:'center',justifyContent:'center',color:'#374151',textDecoration:'none',flexShrink:0}}
+                  title={editModal.appt.patient.phone}>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.86 2.18C1.08.98 2.12 0 3.34 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </a>
+                {/* whatsapp icon */}
+                <a href={`https://wa.me/972${editModal.appt.patient.phone.replace(/^0/,'').replace(/-/g,'')}`} target="_blank" rel="noreferrer"
+                  style={{width:'34px',height:'34px',borderRadius:'50%',border:'1.5px solid #25D366',display:'flex',alignItems:'center',justifyContent:'center',color:'#25D366',textDecoration:'none',flexShrink:0}}
+                  title="WhatsApp">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.527 5.855L0 24l6.335-1.509A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.853 0-3.586-.5-5.075-1.373l-.363-.216-3.763.896.911-3.671-.237-.378A9.963 9.963 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+                </a>
+                {/* action buttons – wrap naturally on small screens */}
+                <button onClick={()=>{closeEditModal();router.push(`/patients/${editModal.appt!.patient.id}`)}}
+                  style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתיק האישי</button>
+                <button style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתשלום</button>
+                <button onClick={()=>{closeEditModal();router.push(`/invoices/new?patientId=${editModal.appt!.patient.id}&appointmentId=${editModal.appt!.id}`)}}
+                  style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לחשבון הלקוח</button>
               </div>
 
               {/* start + end time */}
               <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>שעת התחלה</label>
-                  <input type="time" value={editModal.startTime}
-                    onChange={e=>{const t=e.target.value;setEditModal(m=>({...m,startTime:t,endTime:addMinutes(t,editModal.treatmentTypeId?treatmentTypes.find(x=>x.id===Number(editModal.treatmentTypeId))?.duration??60:60)}))}}
-                    style={inputStyle}/>
+                  <TimePickerInput value={editModal.startTime}
+                    onChange={t=>setEditModal(m=>({...m,startTime:t,endTime:addMinutes(t,editModal.treatmentTypeId?treatmentTypes.find(x=>x.id===Number(editModal.treatmentTypeId))?.duration??60:60)}))}
+                    style={{width:'100%'}}/>
                 </div>
                 <div>
                   <label style={labelStyle}>שעת סיום</label>
-                  <input type="time" value={editModal.endTime} onChange={e=>setEditModal(m=>({...m,endTime:e.target.value}))} style={inputStyle}/>
+                  <TimePickerInput value={editModal.endTime}
+                    onChange={t=>setEditModal(m=>({...m,endTime:t}))}
+                    style={{width:'100%'}}/>
                 </div>
               </div>
 
