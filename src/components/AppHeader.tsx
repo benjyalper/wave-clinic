@@ -159,129 +159,39 @@ export default function AppHeader() {
         style={{ backgroundColor: '#2c3444', direction: 'rtl' }}
         className="hidden md:flex text-white items-center px-4 py-2 gap-3 shadow-md sticky top-0 z-50"
       >
-        {/* Right side: clock + hamburger + dropdowns */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Clock */}
-          <span className="text-sm font-mono text-gray-300 whitespace-nowrap hidden sm:block">
-            {timeStr}
-          </span>
-
-          {/* Reports dropdown */}
-          <div ref={reportsRef} className="relative">
-            <button
-              onClick={() => { setReportsOpen(!reportsOpen); setSettingsOpen(false) }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium hover:bg-white/10 transition-colors"
+        {/* Right side (DOM-first = visually rightmost in RTL): avatar + icons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Avatar - home button */}
+          <Link href="/dashboard">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-base cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: '#2bafa0' }}
+              title="לדף הבית"
             >
-              דוחות
-              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" className="mt-0.5">
-                <path d="M5 8l5 5 5-5H5z" />
+              W
+            </div>
+          </Link>
+
+          {/* Calendar icon */}
+          <Link href="/calendar">
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="יומן">
+              <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
               </svg>
             </button>
-            {reportsOpen && (
-              <div
-                className="dropdown-menu"
-                style={{ right: 0, left: 'auto', minWidth: '180px' }}
-              >
-                {REPORTS_ITEMS.map((item) => (
-                  item.href === '#' ? (
-                    <button key={item.label} onClick={() => setReportsOpen(false)}>
-                      {item.label}
-                    </button>
-                  ) : (
-                    <Link key={item.label} href={item.href}>
-                      <button onClick={() => setReportsOpen(false)}>
-                        {item.label}
-                      </button>
-                    </Link>
-                  )
-                ))}
-              </div>
-            )}
-          </div>
+          </Link>
 
-          {/* Settings dropdown */}
-          <div ref={settingsRef} className="relative">
-            <button
-              onClick={() => { setSettingsOpen(!settingsOpen); setReportsOpen(false) }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium hover:bg-white/10 transition-colors"
-            >
-              הגדרות
-              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" className="mt-0.5">
-                <path d="M5 8l5 5 5-5H5z" />
+          {/* Add patient icon */}
+          <Link href="/patients/new">
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="הוספת מטופל">
+              <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <circle cx="10" cy="8" r="4" />
+                <path d="M2 20c0-4 3.6-7 8-7" />
+                <path d="M19 15v6M16 18h6" strokeLinecap="round" />
               </svg>
             </button>
-            {settingsOpen && (
-              <div
-                className="dropdown-menu"
-                style={{ right: 0, left: 'auto', minWidth: '200px', maxHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
-              >
-                {SETTINGS_SECTION_1.map((item) => (
-                  item.href === '#' ? (
-                    <button key={item.label} onClick={() => setSettingsOpen(false)}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-                        {item.badge && (
-                          <span style={{
-                            backgroundColor: '#ec4899',
-                            color: 'white',
-                            fontSize: '10px',
-                            padding: '1px 5px',
-                            borderRadius: '999px',
-                            fontWeight: 600,
-                          }}>
-                            {item.badge}
-                          </span>
-                        )}
-                        {item.label}
-                      </span>
-                    </button>
-                  ) : (
-                    <Link key={item.label} href={item.href}>
-                      <button onClick={() => setSettingsOpen(false)}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-                          {item.badge && (
-                            <span style={{
-                              backgroundColor: '#ec4899',
-                              color: 'white',
-                              fontSize: '10px',
-                              padding: '1px 5px',
-                              borderRadius: '999px',
-                              fontWeight: 600,
-                            }}>
-                              {item.badge}
-                            </span>
-                          )}
-                          {item.label}
-                        </span>
-                      </button>
-                    </Link>
-                  )
-                ))}
-
-                <hr style={{ margin: '4px 0', borderColor: '#e5e7eb' }} />
-
-                {SETTINGS_SECTION_2.map((item) => (
-                  item.href === '#' ? (
-                    <button key={item.label} onClick={() => setSettingsOpen(false)}>
-                      {item.label}
-                    </button>
-                  ) : (
-                    <Link key={item.label} href={item.href}>
-                      <button onClick={() => setSettingsOpen(false)}>
-                        {item.label}
-                      </button>
-                    </Link>
-                  )
-                ))}
-
-                <button
-                  onClick={handleLogout}
-                  style={{ color: '#ef4444' }}
-                >
-                  ניתוק
-                </button>
-              </div>
-            )}
-          </div>
+          </Link>
         </div>
 
         {/* Center: Search bar */}
@@ -342,39 +252,124 @@ export default function AppHeader() {
           </div>
         </div>
 
-        {/* Left side: icons + avatar */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Add patient icon */}
-          <Link href="/patients/new">
-            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="הוספת מטופל">
-              <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                <circle cx="10" cy="8" r="4" />
-                <path d="M2 20c0-4 3.6-7 8-7" />
-                <path d="M19 15v6M16 18h6" strokeLinecap="round" />
-              </svg>
-            </button>
-          </Link>
-
-          {/* Calendar icon */}
-          <Link href="/calendar">
-            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="יומן">
-              <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
-              </svg>
-            </button>
-          </Link>
-
-          {/* Avatar - home button */}
-          <Link href="/dashboard">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-base cursor-pointer hover:opacity-80 transition-opacity"
-              style={{ backgroundColor: '#2bafa0' }}
-              title="לדף הבית"
+        {/* Left side (DOM-last = visually leftmost in RTL): dropdowns + clock */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Settings dropdown */}
+          <div ref={settingsRef} className="relative">
+            <button
+              onClick={() => { setSettingsOpen(!settingsOpen); setReportsOpen(false) }}
+              className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium hover:bg-white/10 transition-colors"
             >
-              W
-            </div>
-          </Link>
+              הגדרות
+              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" className="mt-0.5">
+                <path d="M5 8l5 5 5-5H5z" />
+              </svg>
+            </button>
+            {settingsOpen && (
+              <div
+                className="dropdown-menu"
+                style={{ right: 'auto', left: 0, minWidth: '200px', maxHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
+              >
+                {SETTINGS_SECTION_1.map((item) => (
+                  item.href === '#' ? (
+                    <button key={item.label} onClick={() => setSettingsOpen(false)}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                        {item.badge && (
+                          <span style={{
+                            backgroundColor: '#ec4899',
+                            color: 'white',
+                            fontSize: '10px',
+                            padding: '1px 5px',
+                            borderRadius: '999px',
+                            fontWeight: 600,
+                          }}>
+                            {item.badge}
+                          </span>
+                        )}
+                        {item.label}
+                      </span>
+                    </button>
+                  ) : (
+                    <Link key={item.label} href={item.href}>
+                      <button onClick={() => setSettingsOpen(false)}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                          {item.badge && (
+                            <span style={{
+                              backgroundColor: '#ec4899',
+                              color: 'white',
+                              fontSize: '10px',
+                              padding: '1px 5px',
+                              borderRadius: '999px',
+                              fontWeight: 600,
+                            }}>
+                              {item.badge}
+                            </span>
+                          )}
+                          {item.label}
+                        </span>
+                      </button>
+                    </Link>
+                  )
+                ))}
+
+                <hr style={{ margin: '4px 0', borderColor: '#e5e7eb' }} />
+
+                {SETTINGS_SECTION_2.map((item) => (
+                  item.href === '#' ? (
+                    <button key={item.label} onClick={() => setSettingsOpen(false)}>
+                      {item.label}
+                    </button>
+                  ) : (
+                    <Link key={item.label} href={item.href}>
+                      <button onClick={() => setSettingsOpen(false)}>
+                        {item.label}
+                      </button>
+                    </Link>
+                  )
+                ))}
+
+                <button onClick={handleLogout} style={{ color: '#ef4444' }}>ניתוק</button>
+              </div>
+            )}
+          </div>
+
+          {/* Reports dropdown */}
+          <div ref={reportsRef} className="relative">
+            <button
+              onClick={() => { setReportsOpen(!reportsOpen); setSettingsOpen(false) }}
+              className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              דוחות
+              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" className="mt-0.5">
+                <path d="M5 8l5 5 5-5H5z" />
+              </svg>
+            </button>
+            {reportsOpen && (
+              <div
+                className="dropdown-menu"
+                style={{ right: 'auto', left: 0, minWidth: '180px' }}
+              >
+                {REPORTS_ITEMS.map((item) => (
+                  item.href === '#' ? (
+                    <button key={item.label} onClick={() => setReportsOpen(false)}>
+                      {item.label}
+                    </button>
+                  ) : (
+                    <Link key={item.label} href={item.href}>
+                      <button onClick={() => setReportsOpen(false)}>
+                        {item.label}
+                      </button>
+                    </Link>
+                  )
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Clock */}
+          <span className="text-sm font-mono text-gray-300 whitespace-nowrap hidden sm:block">
+            {timeStr}
+          </span>
         </div>
       </header>
 
