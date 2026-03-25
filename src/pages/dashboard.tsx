@@ -63,6 +63,8 @@ const MOBILE_ACTIONS = [
   },
 ]
 
+interface TodayAppt { id:number; startTime:string; endTime:string; patient:{firstName:string;lastName:string} }
+
 export default function Dashboard() {
   const router = useRouter()
   const [userName, setUserName] = useState('J')
@@ -71,6 +73,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<string[]>([])
   const [greeting, setGreeting] = useState('')
   const [searchVal, setSearchVal] = useState('')
+  const [todayAppts, setTodayAppts] = useState<TodayAppt[]|null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -87,6 +90,22 @@ export default function Dashboard() {
     const mm = String(today.getMonth() + 1).padStart(2, '0')
     const yyyy = today.getFullYear()
     setReminderDate(`${yyyy}-${mm}-${dd}`)
+
+    // fetch today's appointments
+    const token = typeof window !== 'undefined' ? localStorage.getItem('wave_token') : null
+    if (token) {
+      const from = new Date(); from.setHours(0,0,0,0)
+      const to   = new Date(); to.setHours(23,59,59,999)
+      fetch(`/api/appointments?from=${from.toISOString()}&to=${to.toISOString()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r=>r.json()).then(data=>{
+        if (Array.isArray(data)) {
+          const active = data.filter((a:any)=>a.status!=='cancelled')
+          active.sort((a:any,b:any)=>new Date(a.startTime).getTime()-new Date(b.startTime).getTime())
+          setTodayAppts(active)
+        }
+      }).catch(()=>{})
+    }
   }, [router])
 
   const addTask = () => {
@@ -121,7 +140,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <span className="text-lg">🌿</span>
               <span className="text-gray-700 font-medium text-sm">
-                {greeting}, לא נקבעו טיפולים להיום.
+                {greeting}{todayAppts && todayAppts.length > 0 ? `, יש לך ${todayAppts.length} תורים היום.` : ', לא נקבעו טיפולים להיום.'}
               </span>
             </div>
             <button
@@ -403,31 +422,43 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Today's appointments (empty state) */}
+              {/* Today's appointments */}
               <div className="bg-white rounded-xl shadow-sm p-5 mt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-sm text-gray-700">תורים להיום — {todayStr}</h2>
                   <Link href="/calendar">
-                    <button
-                      className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
-                      style={{ color: '#2bafa0', borderColor: '#2bafa0' }}
-                    >
+                    <button className="text-xs px-3 py-1.5 rounded-lg border transition-colors" style={{ color: '#2bafa0', borderColor: '#2bafa0' }}>
                       לפתיחת יומן
                     </button>
                   </Link>
                 </div>
-                <div className="py-8 text-center">
-                  <div className="text-gray-300 text-4xl mb-2">📅</div>
-                  <p className="text-gray-400 text-sm">לא נקבעו תורים להיום</p>
-                  <Link href="/calendar">
-                    <button
-                      className="mt-3 text-sm px-4 py-2 rounded-lg text-white"
-                      style={{ backgroundColor: '#2bafa0' }}
-                    >
-                      קבע תור חדש
-                    </button>
-                  </Link>
-                </div>
+                {todayAppts === null ? (
+                  <div className="py-6 text-center text-gray-400 text-sm">טוען...</div>
+                ) : todayAppts.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <div className="text-gray-300 text-4xl mb-2">📅</div>
+                    <p className="text-gray-400 text-sm">לא נקבעו תורים להיום</p>
+                    <Link href="/calendar">
+                      <button className="mt-3 text-sm px-4 py-2 rounded-lg text-white" style={{ backgroundColor: '#2bafa0' }}>קבע תור חדש</button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {todayAppts.map(a => {
+                      const s = new Date(a.startTime)
+                      const e = new Date(a.endTime)
+                      const fmt = (d:Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+                      return (
+                        <Link key={a.id} href="/calendar">
+                          <div className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-50" style={{border:'1px solid #e5e7eb'}}>
+                            <span className="text-xs text-gray-500">{fmt(s)}–{fmt(e)}</span>
+                            <span className="text-sm font-medium text-gray-700">{a.patient.firstName} {a.patient.lastName}</span>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

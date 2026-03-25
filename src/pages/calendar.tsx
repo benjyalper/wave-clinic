@@ -1118,8 +1118,9 @@ export default function CalendarPage() {
                   <input type="number" min="1" value={it.qty}
                     onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,qty:Number(e.target.value)||1}:x)}))}
                     style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
-                  <input type="text" inputMode="numeric" value={it.priceText??''}
-                    onChange={e=>{
+                  <input key={`price-${idx}`} type="text" inputMode="numeric"
+                    defaultValue={it.priceText}
+                    onBlur={e=>{
                       const raw=e.target.value.replace(/[^\d.]/g,'')
                       setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,priceText:raw,price:raw===''?0:parseFloat(raw)||0}:x)}))
                     }}
