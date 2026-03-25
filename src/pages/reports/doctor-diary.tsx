@@ -64,12 +64,14 @@ export default function DoctorDiary() {
   const [loading, setLoading] = useState(false)
   const [generated, setGenerated] = useState(false)
   const [rangeLabel, setRangeLabel] = useState('')
+  const [patientName, setPatientName] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('wave_logged_in') !== 'true') {
       router.replace('/'); return
     }
-    // auto-load current month
+    if (!router.isReady) return
+    // auto-load current month (optionally filtered by patientId from URL)
     const today = new Date()
     const from = fmt(new Date(today.getFullYear(), today.getMonth(), 1))
     const to   = fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0))
@@ -79,6 +81,8 @@ export default function DoctorDiary() {
     params.set('from', new Date(from).toISOString())
     const end = new Date(to); end.setHours(23,59,59,999)
     params.set('to', end.toISOString())
+    const pid = router.query.patientId as string | undefined
+    if (pid) params.set('patientId', pid)
     setLoading(true)
     fetch(`/api/appointments?${params}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
@@ -87,10 +91,14 @@ export default function DoctorDiary() {
         data.sort((a: any, b: any) => new Date(a.createdAt||a.startTime).getTime() - new Date(b.createdAt||b.startTime).getTime())
         setRecords(data); setGenerated(true)
         setRangeLabel(formatDateRangeLabel(from, to, 'החודש'))
+        if (pid && data.length > 0) {
+          const p = data[0].patient
+          setPatientName(`${p.firstName} ${p.lastName}`)
+        }
       })
       .catch(()=>{})
       .finally(()=>setLoading(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [router.isReady]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function applyQuickFilter(f: string) {
     setActiveFilter(f)
@@ -119,6 +127,8 @@ export default function DoctorDiary() {
         const end = new Date(toDate); end.setHours(23, 59, 59, 999)
         params.set('to', end.toISOString())
       }
+      const pid = router.query.patientId as string | undefined
+      if (pid) params.set('patientId', pid)
       const res = await fetch(`/api/appointments?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -178,7 +188,7 @@ export default function DoctorDiary() {
           <div style={cardStyle}>
             {/* ── Title ── */}
             <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#1f2937', marginTop: 0, marginBottom: '20px', textAlign: 'right' }}>
-              יומן הרופא - רשומות
+              יומן הרופא - רשומות{patientName ? ` — ${patientName}` : ''}
             </h1>
 
             {/* ── Date range ── */}
