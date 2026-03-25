@@ -66,7 +66,7 @@ function formatMonthRange(m: Date) {
 function isSameDay(a:Date,b:Date){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate() }
 function getTimeSlots() {
   const s:string[]=[]
-  for(let h=8;h<=20;h++){s.push(`${String(h).padStart(2,'0')}:00`); if(h<20)s.push(`${String(h).padStart(2,'0')}:30`)}
+  for(let h=6;h<=23;h++){s.push(`${String(h).padStart(2,'0')}:00`); if(h<23)s.push(`${String(h).padStart(2,'0')}:30`)}
   return s
 }
 function getMonthGrid(year:number, month:number) {
@@ -393,7 +393,7 @@ export default function CalendarPage() {
 
   // clock
   useEffect(()=>{
-    const update=()=>setCurrentTimeTop(((new Date().getHours()*60+new Date().getMinutes())-8*60)/30*SLOT_HEIGHT)
+    const update=()=>setCurrentTimeTop(((new Date().getHours()*60+new Date().getMinutes())-6*60)/30*SLOT_HEIGHT)
     update(); const t=setInterval(update,60000); return()=>clearInterval(t)
   },[])
 
@@ -605,7 +605,7 @@ export default function CalendarPage() {
   const apptByDate:Record<string,Appointment[]>={}
   appointments.forEach(a=>{const k=toDateKey(new Date(a.startTime));if(!apptByDate[k])apptByDate[k]=[];apptByDate[k].push(a)})
   const getApptBlocksForDay=(day:Date)=>appointments.filter(a=>isSameDay(new Date(a.startTime),day)&&a.status!=='cancelled')
-  const apptTopPx=(s:string)=>{const d=new Date(s);return((d.getHours()*60+d.getMinutes())-8*60)/30*SLOT_HEIGHT}
+  const apptTopPx=(s:string)=>{const d=new Date(s);return((d.getHours()*60+d.getMinutes())-6*60)/30*SLOT_HEIGHT}
   const apptHeightPx=(s:string,e:string)=>{const ms=new Date(s),me=new Date(e);return Math.max((me.getTime()-ms.getTime())/60000/30*SLOT_HEIGHT-2,SLOT_HEIGHT-2)}
 
   // ── shared appointment block ──
