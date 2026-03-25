@@ -1080,7 +1080,8 @@ export default function CalendarPage() {
         {/* ── Payment modal ── */}
         {payModal.open&&payModal.appt&&(
           <ModalOverlay onClose={closePayModal}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'18px'}}>
+            <div style={{padding:'24px 28px', display:'flex', flexDirection:'column', gap:0}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
               <button onClick={closePayModal} style={{color:'#6b7280',background:'none',border:'none',cursor:'pointer',fontSize:'22px',lineHeight:1}}>×</button>
               <h2 style={{margin:0,fontSize:'16px',fontWeight:700,color:'#1f2937'}}>תשלום - {payModal.appt.patient.firstName} {payModal.appt.patient.lastName}</h2>
             </div>
@@ -1168,6 +1169,7 @@ export default function CalendarPage() {
                 ביטול
               </button>
             </div>
+            </div>{/* end padding wrapper */}
           </ModalOverlay>
         )}
 
