@@ -247,7 +247,22 @@ export default function DoctorDiary() {
               <table style={{ width: '100%', borderCollapse: 'collapse', direction: 'rtl', fontSize: '13px', minWidth: '700px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                    {/* icon columns */}
+                    <th style={thStyle}>תאריך יצירה</th>
+                    <th style={thStyle}>שם הלקוח</th>
+                    <th style={thStyle}>מועד הפגישה</th>
+                    <th style={thStyle}>שינויי מועד</th>
+                    <th style={thStyle}>סוג השירות</th>
+                    <th style={thStyle}>מחיר</th>
+                    <th style={thStyle}>שובר</th>
+                    <th style={thIconStyle} className="no-print">
+                      <button onClick={() => window.print()} title="הדפסה" style={iconBtnStyle}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
+                          <polyline points="6 9 6 2 18 2 18 9" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <rect x="6" y="14" width="12" height="8" rx="1" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </th>
                     <th style={thIconStyle} className="no-print">
                       <button onClick={exportCSV} title="ייצוא לאקסל" style={iconBtnStyle}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
@@ -259,22 +274,6 @@ export default function DoctorDiary() {
                         </svg>
                       </button>
                     </th>
-                    <th style={thIconStyle} className="no-print">
-                      <button onClick={() => window.print()} title="הדפסה" style={iconBtnStyle}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2">
-                          <polyline points="6 9 6 2 18 2 18 9" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <rect x="6" y="14" width="12" height="8" rx="1" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </button>
-                    </th>
-                    <th style={thStyle}>שובר</th>
-                    <th style={thStyle}>מחיר</th>
-                    <th style={thStyle}>סוג השירות</th>
-                    <th style={thStyle}>שינויי מועד</th>
-                    <th style={thStyle}>מועד הפגישה</th>
-                    <th style={thStyle}>שם הלקוח</th>
-                    <th style={thStyle}>תאריך יצירה</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -297,18 +296,7 @@ export default function DoctorDiary() {
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#f0faf9'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = idx % 2 === 0 ? 'white' : '#f9fafb'}
                     >
-                      <td style={tdIconStyle} className="no-print" />
-                      <td style={tdIconStyle} className="no-print" />
-                      <td style={tdStyle}>
-                        {r.paid
-                          ? <span style={{ color: '#16a34a', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>{r.id}</span>
-                          : <span style={{ color: '#dc2626', fontWeight: 600 }}>לא שולם</span>
-                        }
-                      </td>
-                      <td style={tdStyle}>{r.price > 0 ? r.price : 0}</td>
-                      <td style={tdStyle}>{r.treatmentType?.name || '—'}</td>
-                      <td style={{ ...tdStyle, color: '#9ca3af' }}>—</td>
-                      <td style={tdStyle}>{formatDateTime(r.startTime)}</td>
+                      <td style={tdStyle}>{formatDateTime(r.createdAt || r.startTime)}</td>
                       <td style={tdStyle}>
                         <span
                           onClick={() => router.push(`/patients/${r.patient.id}`)}
@@ -317,7 +305,18 @@ export default function DoctorDiary() {
                           {r.patient.firstName} {r.patient.lastName}
                         </span>
                       </td>
-                      <td style={tdStyle}>{formatDateTime(r.createdAt || r.startTime)}</td>
+                      <td style={tdStyle}>{formatDateTime(r.startTime)}</td>
+                      <td style={{ ...tdStyle, color: '#9ca3af' }}>—</td>
+                      <td style={tdStyle}>{r.treatmentType?.name || '—'}</td>
+                      <td style={tdStyle}>{r.price > 0 ? r.price : 0}</td>
+                      <td style={tdStyle}>
+                        {r.paid
+                          ? <span style={{ color: '#16a34a', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>{r.id}</span>
+                          : <span style={{ color: '#dc2626', fontWeight: 600 }}>לא שולם</span>
+                        }
+                      </td>
+                      <td style={tdIconStyle} className="no-print" />
+                      <td style={tdIconStyle} className="no-print" />
                     </tr>
                   ))}
                 </tbody>
