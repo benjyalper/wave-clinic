@@ -339,7 +339,7 @@ export default function CalendarPage() {
       payMethod:'מזומן', payMethod2:'ללא', notes:'', saving:false,
     })
   }
-  const closePayModal=()=>setPayModal(m=>({...m,open:false}))
+  const closePayModal=()=>{ setPayModal(m=>({...m,open:false})); setEditModal(m=>({...m,open:false,appt:null})) }
 
   const handleGenerateDoc=async()=>{
     if(!payModal.appt) return
@@ -629,8 +629,8 @@ export default function CalendarPage() {
   )
 
   // ── shared modal overlay ──
-  const ModalOverlay=({onClose, children}:{onClose:()=>void; children:React.ReactNode})=>(
-    <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.45)',zIndex:100,display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',padding:isMobile?'0':'16px'}}
+  const ModalOverlay=({onClose, children, zIndex=100}:{onClose:()=>void; children:React.ReactNode; zIndex?:number})=>(
+    <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.45)',zIndex,display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',padding:isMobile?'0':'16px'}}
       onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
       <div dir="rtl" style={{
         backgroundColor:'white',
@@ -642,6 +642,7 @@ export default function CalendarPage() {
         overflowX:'hidden',
         maxHeight:isMobile?'92vh':'90vh',
         display:'flex',flexDirection:'column',
+        WebkitOverflowScrolling:'touch',
       }}>
         {children}
       </div>
@@ -1008,10 +1009,9 @@ export default function CalendarPage() {
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתיק האישי</button>
                 <button onClick={()=>{
                     const a=editModal.appt!
-                    setEditModal(m=>({...m,open:false,appt:null}))
                     setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:'',qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
                   }}
-                  style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתשלום</button>
+                  style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap',touchAction:'manipulation'}}>לתשלום</button>
                 <button onClick={()=>{closeEditModal();router.push(`/invoices/new?patientId=${editModal.appt!.patient.id}&appointmentId=${editModal.appt!.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לחשבון הלקוח</button>
               </div>
@@ -1083,7 +1083,7 @@ export default function CalendarPage() {
 
         {/* ── Payment modal ── */}
         {payModal.open&&payModal.appt&&(
-          <ModalOverlay onClose={closePayModal}>
+          <ModalOverlay onClose={closePayModal} zIndex={110}>
             <div style={{padding:'24px 28px', display:'flex', flexDirection:'column', gap:0}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
               <button onClick={closePayModal} style={{color:'#6b7280',background:'none',border:'none',cursor:'pointer',fontSize:'22px',lineHeight:1}}>×</button>
