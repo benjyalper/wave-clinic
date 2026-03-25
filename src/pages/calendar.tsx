@@ -500,11 +500,6 @@ export default function CalendarPage() {
               </div>
               <div ref={calendarBodyRef} style={{flex:1,overflowY:'auto',overflowX:'auto',position:'relative'}}>
                 <div style={{position:'relative',minWidth:'420px'}}>
-                  {isCurrentWeek&&todayColIndex>=0&&currentTimeTop>0&&(
-                    <div style={{position:'absolute',top:`${currentTimeTop}px`,left:`${(todayColIndex/6)*100}%`,right:`calc(40px + ${((5-todayColIndex)/6)*100}%)`,height:'2px',backgroundColor:'#ef4444',zIndex:10,pointerEvents:'none'}}>
-                      <div style={{position:'absolute',right:'-4px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
-                    </div>
-                  )}
                   {TIME_SLOTS.map(slot=>{
                     const isHour=slot.endsWith(':00')
                     return(
@@ -526,22 +521,31 @@ export default function CalendarPage() {
                       </div>
                     )
                   })}
-                  {/* appointment blocks overlay */}
+                  {/* appointment blocks + current-time indicator overlay */}
                   <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'40px repeat(6,minmax(60px,1fr))',direction:'rtl',pointerEvents:'none',minWidth:'420px'}}>
                     <div/>
-                    {weekDays.map((day,colIdx)=>(
-                      <div key={colIdx} style={{position:'relative',pointerEvents:'auto'}}>
-                        {getApptBlocksForDay(day).map(appt=>(
-                          <ApptBlock key={appt.id} appt={appt} extraStyle={{
-                            position:'absolute',
-                            top:`${apptTopPx(appt.startTime)}px`,
-                            left:'2px',right:'2px',
-                            height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
-                            zIndex:5,
-                          }}/>
-                        ))}
-                      </div>
-                    ))}
+                    {weekDays.map((day,colIdx)=>{
+                      const isDayToday=isCurrentWeek&&isSameDay(day,today)
+                      return(
+                        <div key={colIdx} style={{position:'relative',pointerEvents:'auto'}}>
+                          {/* red current-time line — inside the correct column, no % math needed */}
+                          {isDayToday&&currentTimeTop>0&&(
+                            <div style={{position:'absolute',top:`${currentTimeTop}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:10,pointerEvents:'none'}}>
+                              <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
+                            </div>
+                          )}
+                          {getApptBlocksForDay(day).map(appt=>(
+                            <ApptBlock key={appt.id} appt={appt} extraStyle={{
+                              position:'absolute',
+                              top:`${apptTopPx(appt.startTime)}px`,
+                              left:'2px',right:'2px',
+                              height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
+                              zIndex:5,
+                            }}/>
+                          ))}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
