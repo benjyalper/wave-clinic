@@ -327,7 +327,7 @@ export default function CalendarPage() {
   const [payModal, setPayModal] = useState<{
     open:boolean; appt:Appointment|null;
     toName:string;
-    items:Array<{treatmentTypeId:string; freeText:string; qty:number; price:number}>;
+    items:Array<{treatmentTypeId:string; freeText:string; qty:number; price:number; priceText:string}>;
     payMethod:string; payMethod2:string; notes:string; saving:boolean;
   }>({open:false,appt:null,toName:'',items:[],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
 
@@ -1120,11 +1120,11 @@ export default function CalendarPage() {
                     style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
                   <input type="text" inputMode="numeric" value={it.priceText??''}
                     onChange={e=>{
-                      const raw=e.target.value.replace(/[^\d]/g,'')
-                      setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,priceText:raw,price:raw===''?0:parseInt(raw,10)}:x)}))
+                      const raw=e.target.value.replace(/[^\d.]/g,'')
+                      setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,priceText:raw,price:raw===''?0:parseFloat(raw)||0}:x)}))
                     }}
                     placeholder="סכום"
-                    style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
+                    style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'left',direction:'ltr'}}/>
                 </div>
               ))}
               <div style={{display:'flex',gap:'8px',marginBottom:'12px',marginTop:'4px'}}>
