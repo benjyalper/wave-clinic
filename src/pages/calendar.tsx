@@ -731,12 +731,6 @@ export default function CalendarPage() {
                       const isDayToday=isCurrentWeek&&isSameDay(day,today)
                       return(
                         <div key={colIdx} style={{position:'relative',pointerEvents:'none'}}>
-                          {/* red line stays inside the correct column cell */}
-                          {isDayToday&&currentTimeTop>0&&(
-                            <div style={{position:'absolute',top:`${currentTimeTop}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:10}}>
-                              <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
-                            </div>
-                          )}
                           {computeOverlapLayout(getApptBlocksForDay(day)).map(({appt,colIndex,colCount})=>{
                             const w = colCount > 1 ? 1/colCount : 1
                             return (
@@ -787,12 +781,6 @@ export default function CalendarPage() {
                   <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'56px 1fr',pointerEvents:'none'}}>
                     <div/>
                     <div style={{position:'relative',pointerEvents:'none'}}>
-                      {/* red line for day view */}
-                      {isSameDay(weekDays[0],today)&&currentTimeTop>0&&(
-                        <div style={{position:'absolute',top:`${currentTimeTop}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:10}}>
-                          <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
-                        </div>
-                      )}
                       {computeOverlapLayout(getApptBlocksForDay(weekDays[0])).map(({appt,colIndex,colCount})=>{
                         const w = colCount > 1 ? 1/colCount : 1
                         return (
