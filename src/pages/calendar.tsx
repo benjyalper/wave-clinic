@@ -216,13 +216,36 @@ export default function CalendarPage() {
     if(id){const tt=treatmentTypes.find(t=>t.id===Number(id)); if(tt)setModal(m=>({...m,endTime:addMinutes(m.startTime,tt.duration)}))}
   }
 
-  // ── save new appointment ──
+  // ── save new appointment (auto-creates patient if none selected) ──
   const handleSave=async()=>{
-    if(!selectedPatient){alert('נא לבחור מטופל מהרשימה'); return}
+    if(!patientSearch.trim()){alert('נא להזין שם מטופל'); return}
     if(!modal.date){alert('נא לבחור תאריך'); return}
     setSaving(true)
     try{
       const token=localStorage.getItem('wave_token')
+
+      // Resolve patient ID – use selected, or auto-create from typed name
+      let patientId: number
+      if(selectedPatient){
+        patientId=selectedPatient.id
+      } else {
+        const parts=patientSearch.trim().split(/\s+/)
+        const firstName=parts[0]
+        const lastName=parts.slice(1).join(' ')||'.'
+        const phone=newPhone.trim()||'לא ידוע'
+        const cr=await fetch('/api/patients',{
+          method:'POST',
+          headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+          body:JSON.stringify({firstName, lastName, phone}),
+        })
+        if(!cr.ok){
+          let msg='שגיאה ביצירת מטופל'
+          try{const d=await cr.json();msg=d.error||msg}catch{}
+          alert(msg); setSaving(false); return
+        }
+        patientId=(await cr.json()).id
+      }
+
       const tt=treatmentTypes.find(t=>t.id===Number(selectedTreatmentTypeId))
       const startISO=new Date(`${modal.date}T${modal.startTime}:00`).toISOString()
       const endISO=new Date(`${modal.date}T${modal.endTime}:00`).toISOString()
@@ -230,7 +253,7 @@ export default function CalendarPage() {
         method:'POST',
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body:JSON.stringify({
-          patientId:selectedPatient.id,
+          patientId,
           treatmentTypeId:selectedTreatmentTypeId?Number(selectedTreatmentTypeId):null,
           startTime:startISO, endTime:endISO,
           price:tt?.price??0, notes:apptNotes,
@@ -241,8 +264,11 @@ export default function CalendarPage() {
         try{const d=await res.json(); msg=d.error||msg}catch{}
         alert(msg); setSaving(false); return
       }
+      // Optimistically add to state so calendar updates immediately
+      const saved=await res.json()
+      setAppointments(prev=>[...prev, saved])
       closeModal()
-      await loadAppointments()
+      loadAppointments() // background sync
     } catch(e){
       alert('שגיאת רשת – אנא נסה שנית')
     }
@@ -585,9 +611,10 @@ export default function CalendarPage() {
                   <div style={{position:'relative'}}>
                     <input ref={patientSearchRef} type="text" value={patientSearch}
                       onChange={e=>{setPatientSearch(e.target.value);setSelectedPatient(null);setNewPhone('')}}
-                      placeholder="חיפוש מטופל קיים"
+                      placeholder="שם מטופל (חיפוש או חדש)"
                       style={inputStyle}
-                      onFocus={()=>patientSearch&&setShowPatientDropdown(true)}
+                      onFocus={()=>patientResults.length>0&&setShowPatientDropdown(true)}
+                      onBlur={()=>setTimeout(()=>setShowPatientDropdown(false),180)}
                     />
                     <svg style={{position:'absolute',left:'10px',top:'50%',transform:'translateY(-50%)',color:'#9ca3af',pointerEvents:'none'}} width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" strokeLinecap="round"/></svg>
                     {showPatientDropdown&&patientResults.length>0&&(
@@ -604,7 +631,12 @@ export default function CalendarPage() {
                       </div>
                     )}
                   </div>
-                  {selectedPatient&&<div style={{marginTop:'4px',fontSize:'12px',color:'#2bafa0',fontWeight:500}}>✓ {selectedPatient.firstName} {selectedPatient.lastName}</div>}
+                  {selectedPatient
+                    ? <div style={{marginTop:'4px',fontSize:'12px',color:'#2bafa0',fontWeight:500}}>✓ מטופל קיים: {selectedPatient.firstName} {selectedPatient.lastName}</div>
+                    : patientSearch.trim()
+                      ? <div style={{marginTop:'4px',fontSize:'12px',color:'#f59e0b',fontWeight:500}}>✦ מטופל חדש יווצר בשמירה</div>
+                      : null
+                  }
                 </div>
                 <div>
                   <label style={labelStyle}>טלפון</label>
