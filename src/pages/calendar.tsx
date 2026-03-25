@@ -335,7 +335,7 @@ export default function CalendarPage() {
     setPayModal({
       open:true, appt,
       toName:`${appt.patient.firstName} ${appt.patient.lastName}`,
-      items:[{treatmentTypeId:appt.treatmentType?String(appt.treatmentType.id):'', freeText:'', qty:1, price:0}],
+      items:[{treatmentTypeId:appt.treatmentType?String(appt.treatmentType.id):'', freeText:'', qty:1, price:0, priceText:''}],
       payMethod:'מזומן', payMethod2:'ללא', notes:'', saving:false,
     })
   }
@@ -1114,23 +1114,26 @@ export default function CalendarPage() {
                   <input type="number" min="1" value={it.qty}
                     onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,qty:Number(e.target.value)||1}:x)}))}
                     style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
-                  <input type="text" inputMode="decimal" value={it.price===0?'':String(it.price)}
-                    onChange={e=>{const v=e.target.value.replace(/[^\d.]/g,''); setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,price:v===''?0:parseFloat(v)||0}:x)}))}}
+                  <input type="text" inputMode="numeric" value={it.priceText??''}
+                    onChange={e=>{
+                      const raw=e.target.value.replace(/[^\d]/g,'')
+                      setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,priceText:raw,price:raw===''?0:parseInt(raw,10)}:x)}))
+                    }}
                     placeholder="סכום"
                     style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
                 </div>
               ))}
               <div style={{display:'flex',gap:'8px',marginBottom:'12px',marginTop:'4px'}}>
-                <button onClick={()=>setPayModal(m=>({...m,items:[...m.items,{treatmentTypeId:'',freeText:undefined as any,qty:1,price:0}]}))}
+                <button onClick={()=>setPayModal(m=>({...m,items:[...m.items,{treatmentTypeId:'',freeText:undefined as any,qty:1,price:0,priceText:''}]}))}
                   style={{background:'none',border:'1px solid #d1d5db',borderRadius:'6px',padding:'4px 10px',fontSize:'13px',cursor:'pointer',color:'#374151'}}>+</button>
-                <button onClick={()=>setPayModal(m=>({...m,items:[...m.items,{treatmentTypeId:'',freeText:'',qty:1,price:0}]}))}
+                <button onClick={()=>setPayModal(m=>({...m,items:[...m.items,{treatmentTypeId:'',freeText:'',qty:1,price:0,priceText:''}]}))}
                   style={{background:'none',border:'1px solid #d1d5db',borderRadius:'6px',padding:'4px 12px',fontSize:'12px',cursor:'pointer',color:'#6b7280'}}>להוספת פרט חופשי</button>
               </div>
             </div>
 
             {/* Total */}
             <div style={{textAlign:'right',marginBottom:'14px',fontSize:'14px',fontWeight:700,color:'#d97706'}}>
-              סה"כ לחיוב (כולל מע"מ): {payModal.items.reduce((s,i)=>s+i.qty*i.price,0).toFixed(2)} ₪
+              סה"כ לחיוב (כולל מע"מ): {payModal.items.reduce((s,i)=>s+(i.qty*(parseInt(i.priceText||'0',10)||0)),0).toFixed(2)} ₪
             </div>
 
             {/* Payment methods */}

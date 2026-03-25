@@ -67,12 +67,30 @@ export default function DoctorDiary() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('wave_logged_in') !== 'true') {
-      router.replace('/')
+      router.replace('/'); return
     }
-    // always start fresh
-    setGenerated(false)
-    setRecords([])
-  }, [router])
+    // auto-load current month
+    const today = new Date()
+    const from = fmt(new Date(today.getFullYear(), today.getMonth(), 1))
+    const to   = fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+    setFromDate(from); setToDate(to); setActiveFilter('החודש')
+    const token = localStorage.getItem('wave_token')
+    const params = new URLSearchParams()
+    params.set('from', new Date(from).toISOString())
+    const end = new Date(to); end.setHours(23,59,59,999)
+    params.set('to', end.toISOString())
+    setLoading(true)
+    fetch(`/api/appointments?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return
+        data.sort((a: any, b: any) => new Date(a.createdAt||a.startTime).getTime() - new Date(b.createdAt||b.startTime).getTime())
+        setRecords(data); setGenerated(true)
+        setRangeLabel(formatDateRangeLabel(from, to, 'החודש'))
+      })
+      .catch(()=>{})
+      .finally(()=>setLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function applyQuickFilter(f: string) {
     setActiveFilter(f)
@@ -91,7 +109,7 @@ export default function DoctorDiary() {
   }
 
   const handleGenerate = useCallback(async () => {
-    if (!fromDate) { alert('יש לבחור תאריך התחלה'); return }
+    if (!fromDate) return
     setLoading(true)
     try {
       const token = localStorage.getItem('wave_token')
