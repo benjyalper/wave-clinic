@@ -333,7 +333,7 @@ export default function DoctorDiary() {
                       <td style={tdStyle}>{r.price > 0 ? r.price : 0}</td>
                       <td style={tdStyle}>
                         {r.paid
-                          ? <span style={{ color: '#16a34a', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>{r.id}</span>
+                          ? <span style={{ color: '#16a34a', fontWeight: 600 }}>שולם</span>
                           : <span style={{ color: '#dc2626', fontWeight: 600 }}>לא שולם</span>
                         }
                       </td>

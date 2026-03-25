@@ -613,7 +613,7 @@ export default function CalendarPage() {
     <div
       onClick={e=>{e.stopPropagation();openEditModal(appt)}}
       style={{
-        backgroundColor:appt.treatmentType?.color||'#2bafa0',
+        backgroundColor:appt.paid ? '#60a5fa' : (appt.treatmentType?.color||'#2bafa0'),
         borderRadius:'4px', padding:'2px 5px', fontSize:'11px',
         color:'white', overflow:'hidden', cursor:'pointer', lineHeight:1.3,
         ...extraStyle,
@@ -723,7 +723,7 @@ export default function CalendarPage() {
                           ))}
                           {isThisMonth&&dayAppts.slice(0,2).map((a,ai)=>(
                             <div key={ai} className="text-white rounded px-1 mb-0.5 truncate"
-                              style={{backgroundColor:a.treatmentType?.color||'#2bafa0',fontSize:'9px',lineHeight:'16px',cursor:'pointer'}}
+                              style={{backgroundColor:a.paid?'#60a5fa':(a.treatmentType?.color||'#2bafa0'),fontSize:'9px',lineHeight:'16px',cursor:'pointer'}}
                               onClick={e=>{e.stopPropagation();openEditModal(a)}}>
                               {a.patient.firstName} {a.patient.lastName}
                             </div>
