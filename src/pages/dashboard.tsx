@@ -90,23 +90,46 @@ export default function Dashboard() {
     const mm = String(today.getMonth() + 1).padStart(2, '0')
     const yyyy = today.getFullYear()
     setReminderDate(`${yyyy}-${mm}-${dd}`)
-
-    // fetch today's appointments
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wave_token') : null
-    if (token) {
-      const from = new Date(); from.setHours(0,0,0,0)
-      const to   = new Date(); to.setHours(23,59,59,999)
-      fetch(`/api/appointments?from=${from.toISOString()}&to=${to.toISOString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(r=>r.json()).then(data=>{
-        if (Array.isArray(data)) {
-          const active = data.filter((a:any)=>a.status!=='cancelled')
-          active.sort((a:any,b:any)=>new Date(a.startTime).getTime()-new Date(b.startTime).getTime())
-          setTodayAppts(active)
-        }
-      }).catch(()=>{})
-    }
   }, [router])
+
+  // Separate effect — fetch today's appointments once on mount
+  useEffect(() => {
+    const token = localStorage.getItem('wave_token')
+    if (!token) return
+    // Build local-date boundaries to avoid timezone edge cases
+    const now = new Date()
+    const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+    const from = new Date(localDate + 'T00:00:00') // parsed as local time
+    const to   = new Date(localDate + 'T23:59:59')
+    fetch(`/api/appointments?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        const active = (data as any[]).filter(a => a.status !== 'cancelled')
+        active.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+        setTodayAppts(active)
+      }
+    }).catch(() => setTodayAppts([]))
+  }, [])
+
+  const refreshTodayAppts = () => {
+    const token = localStorage.getItem('wave_token')
+    if (!token) return
+    setTodayAppts(null)
+    const now = new Date()
+    const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+    const from = new Date(localDate + 'T00:00:00')
+    const to   = new Date(localDate + 'T23:59:59')
+    fetch(`/api/appointments?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        const active = (data as any[]).filter(a => a.status !== 'cancelled')
+        active.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+        setTodayAppts(active)
+      }
+    }).catch(() => setTodayAppts([]))
+  }
 
   const addTask = () => {
     if (newTask.trim()) {
@@ -426,11 +449,16 @@ export default function Dashboard() {
               <div className="bg-white rounded-xl shadow-sm p-5 mt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-sm text-gray-700">תורים להיום — {todayStr}</h2>
-                  <Link href="/calendar">
-                    <button className="text-xs px-3 py-1.5 rounded-lg border transition-colors" style={{ color: '#2bafa0', borderColor: '#2bafa0' }}>
-                      לפתיחת יומן
+                  <div className="flex items-center gap-2">
+                    <button onClick={refreshTodayAppts} className="p-1 rounded hover:bg-gray-100 transition-colors" title="רענן">
+                      <svg width="14" height="14" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 9A8 8 0 006.5 5.5L4 9m16 6l-2.5 3.5A8 8 0 013.9 15" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
-                  </Link>
+                    <Link href="/calendar">
+                      <button className="text-xs px-3 py-1.5 rounded-lg border transition-colors" style={{ color: '#2bafa0', borderColor: '#2bafa0' }}>
+                        לפתיחת יומן
+                      </button>
+                    </Link>
+                  </div>
                 </div>
                 {todayAppts === null ? (
                   <div className="py-6 text-center text-gray-400 text-sm">טוען...</div>

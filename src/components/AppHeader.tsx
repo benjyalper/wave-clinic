@@ -374,35 +374,12 @@ export default function AppHeader() {
       </header>
 
       {/* ─────────────── MOBILE HEADER (below md) ─────────────── */}
+      {/* Items in LTR visual order: left→right = [dots+calendar] [W] [hamburger] */}
       <header
         style={{ height: '56px', backgroundColor: '#2c3444' }}
-        className="md:hidden flex items-center justify-between px-3 shadow-md sticky top-0 z-50"
-        dir="rtl"
+        className="md:hidden flex flex-row items-center justify-between px-3 shadow-md sticky top-0 z-50"
       >
-        {/* Right: hamburger */}
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="p-2 rounded hover:bg-white/10 transition-colors text-white"
-          aria-label="תפריט"
-        >
-          <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20">
-            <rect y="3" width="20" height="2" rx="1" />
-            <rect y="9" width="20" height="2" rx="1" />
-            <rect y="15" width="20" height="2" rx="1" />
-          </svg>
-        </button>
-
-        {/* Center: teal avatar W → /dashboard */}
-        <Link href="/dashboard">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-base cursor-pointer"
-            style={{ backgroundColor: '#2bafa0' }}
-          >
-            W
-          </div>
-        </Link>
-
-        {/* Left: calendar icon + three-dot menu */}
+        {/* LEFT side: calendar icon + three-dot menu */}
         <div className="flex items-center gap-1">
           <Link href="/calendar">
             <button className="p-2 rounded hover:bg-white/10 transition-colors text-white" title="יומן">
@@ -447,6 +424,29 @@ export default function AppHeader() {
             )}
           </div>
         </div>
+
+        {/* CENTER: teal avatar W → /dashboard */}
+        <Link href="/dashboard">
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-base cursor-pointer"
+            style={{ backgroundColor: '#2bafa0' }}
+          >
+            W
+          </div>
+        </Link>
+
+        {/* RIGHT: hamburger */}
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 rounded hover:bg-white/10 transition-colors text-white"
+          aria-label="תפריט"
+        >
+          <svg width="22" height="22" fill="currentColor" viewBox="0 0 20 20">
+            <rect y="3" width="20" height="2" rx="1" />
+            <rect y="9" width="20" height="2" rx="1" />
+            <rect y="15" width="20" height="2" rx="1" />
+          </svg>
+        </button>
       </header>
 
       {/* ─────────────── MOBILE SLIDE-OUT SIDEBAR ─────────────── */}
