@@ -156,9 +156,11 @@ export default function AppHeader() {
   return (
     <>
       {/* ─────────────── DESKTOP HEADER (md and up) ─────────────── */}
+      {/* Spacer so content isn't hidden behind fixed header */}
+      <div className="hidden md:block" style={{ height: '52px' }} />
       <header
-        style={{ backgroundColor: '#2c3444', direction: 'rtl' }}
-        className="hidden md:flex text-white items-center px-4 py-2 gap-3 shadow-md sticky top-0 z-50"
+        style={{ backgroundColor: '#2c3444', direction: 'rtl', position: 'fixed', top: 0, left: 0, right: 0 }}
+        className="hidden md:flex text-white items-center px-4 py-2 gap-3 shadow-md z-50"
       >
         {/* Right side (DOM-first = visually rightmost in RTL): avatar + icons */}
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -375,10 +377,12 @@ export default function AppHeader() {
       </header>
 
       {/* ─────────────── MOBILE HEADER (below md) ─────────────── */}
+      {/* Spacer so content isn't hidden behind fixed header */}
+      <div className="md:hidden" style={{ height: '56px' }} />
       {/* Items in LTR visual order: left→right = [dots+calendar] [W] [hamburger] */}
       <header
-        style={{ height: '56px', backgroundColor: '#2c3444' }}
-        className="md:hidden flex flex-row items-center justify-between px-3 shadow-md sticky top-0 z-50"
+        style={{ height: '56px', backgroundColor: '#2c3444', position: 'fixed', top: 0, left: 0, right: 0 }}
+        className="md:hidden flex flex-row items-center justify-between px-3 shadow-md z-50"
       >
         {/* LEFT side: calendar icon + three-dot menu */}
         <div className="flex items-center gap-1">
