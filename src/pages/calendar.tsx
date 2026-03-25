@@ -1006,7 +1006,7 @@ export default function CalendarPage() {
                 {/* action buttons – wrap naturally on small screens */}
                 <button onClick={()=>{closeEditModal();router.push(`/patients/${editModal.appt!.patient.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתיק האישי</button>
-                <button onClick={()=>{closeEditModal();openPayModal(editModal.appt!)}}
+                <button onClick={()=>{ const a=editModal.appt!; closeEditModal(); setTimeout(()=>openPayModal(a),0) }}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתשלום</button>
                 <button onClick={()=>{closeEditModal();router.push(`/invoices/new?patientId=${editModal.appt!.patient.id}&appointmentId=${editModal.appt!.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לחשבון הלקוח</button>
@@ -1114,8 +1114,8 @@ export default function CalendarPage() {
                   <input type="number" min="1" value={it.qty}
                     onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,qty:Number(e.target.value)||1}:x)}))}
                     style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
-                  <input type="number" min="0" value={it.price||''}
-                    onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,price:Number(e.target.value)||0}:x)}))}
+                  <input type="text" inputMode="decimal" value={it.price===0?'':String(it.price)}
+                    onChange={e=>{const v=e.target.value.replace(/[^\d.]/g,''); setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,price:v===''?0:parseFloat(v)||0}:x)}))}}
                     placeholder="סכום"
                     style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
                 </div>

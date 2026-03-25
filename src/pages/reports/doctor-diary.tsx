@@ -69,6 +69,9 @@ export default function DoctorDiary() {
     if (typeof window !== 'undefined' && localStorage.getItem('wave_logged_in') !== 'true') {
       router.replace('/')
     }
+    // always start fresh
+    setGenerated(false)
+    setRecords([])
   }, [router])
 
   function applyQuickFilter(f: string) {
@@ -88,6 +91,7 @@ export default function DoctorDiary() {
   }
 
   const handleGenerate = useCallback(async () => {
+    if (!fromDate) { alert('יש לבחור תאריך התחלה'); return }
     setLoading(true)
     try {
       const token = localStorage.getItem('wave_token')
