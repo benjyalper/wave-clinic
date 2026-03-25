@@ -232,14 +232,14 @@ function TimePickerInput({ value, onChange, style }: {
           minWidth:'160px',
         }}>
           {/* Column headers */}
-          <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'6px' }}>
+          <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'6px', direction:'ltr' }}>
             <span style={{ width:'54px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>שעה</span>
             <span style={{ width:'14px' }} />
             <span style={{ width:'54px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>דקות</span>
           </div>
 
           {/* Scroll columns */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px', direction:'ltr' }}>
             {/* Hours */}
             <div ref={hourRef} style={colBox}>
               {Array.from({length:24},(_,i)=>(
