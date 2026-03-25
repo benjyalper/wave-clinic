@@ -146,7 +146,9 @@ const labelStyle: React.CSSProperties = {
 // ─── TimePickerInput ─────────────────────────────────────────────────────────
 
 const MINS = [0,5,10,15,20,25,30,35,40,45,50,55]
-const ITEM_H = 44
+const ITEM_H = 48   // px per row
+const VISIBLE = 5   // rows visible (odd → middle row = selection)
+const PAD = 2       // blank rows above/below so first/last items can reach center
 
 function TimePickerInput({ value, onChange, style }: {
   value: string
@@ -154,48 +156,24 @@ function TimePickerInput({ value, onChange, style }: {
   style?: React.CSSProperties
 }) {
   const [open, setOpen] = useState(false)
-  const [tempH, setTempH] = useState(0)
-  const [tempM, setTempM] = useState(0)
   const wrapRef = useRef<HTMLDivElement>(null)
   const hourRef = useRef<HTMLDivElement>(null)
   const minRef  = useRef<HTMLDivElement>(null)
-  const hourTimer = useRef<any>(null)
-  const minTimer  = useRef<any>(null)
 
-  const handleHourScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget
-    clearTimeout(hourTimer.current)
-    hourTimer.current = setTimeout(() => {
-      const idx = Math.round(el.scrollTop / ITEM_H)
-      setTempH(Math.max(0, Math.min(23, idx)))
-    }, 80)
-  }
-
-  const handleMinScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget
-    clearTimeout(minTimer.current)
-    minTimer.current = setTimeout(() => {
-      const idx = Math.round(el.scrollTop / ITEM_H)
-      setTempM(MINS[Math.max(0, Math.min(MINS.length - 1, idx))])
-    }, 80)
-  }
-
-  // when picker opens, parse current value and scroll columns to it
+  // When picker opens, scroll to reflect current value
   useEffect(() => {
     if (!open) return
     const [hh, mm] = value.split(':').map(Number)
-    const h = isNaN(hh) ? 0 : hh
-    const m = isNaN(mm) ? 0 : Math.round(mm / 5) * 5 % 60
-    setTempH(h)
-    setTempM(m)
+    const h = isNaN(hh) ? 8 : Math.max(0, Math.min(23, hh))
+    const rawM = isNaN(mm) ? 0 : mm
+    const mIdx = Math.max(0, MINS.indexOf(MINS.reduce((best, v) => Math.abs(v-rawM) < Math.abs(best-rawM) ? v : best, MINS[0])))
     setTimeout(() => {
       if (hourRef.current) hourRef.current.scrollTop = h * ITEM_H
-      const mIdx = MINS.indexOf(m)
-      if (minRef.current) minRef.current.scrollTop = (mIdx >= 0 ? mIdx : 0) * ITEM_H
-    }, 40)
+      if (minRef.current)  minRef.current.scrollTop  = mIdx * ITEM_H
+    }, 30)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // close on outside click
+  // Close on outside click
   useEffect(() => {
     if (!open) return
     const fn = (e: MouseEvent) => {
@@ -205,110 +183,139 @@ function TimePickerInput({ value, onChange, style }: {
     return () => document.removeEventListener('mousedown', fn)
   }, [open])
 
+  // Read scroll position directly from DOM — always accurate
   function confirm() {
-    onChange(`${String(tempH).padStart(2,'0')}:${String(tempM).padStart(2,'0')}`)
+    const h   = Math.max(0, Math.min(23,           Math.round((hourRef.current?.scrollTop ?? 0) / ITEM_H)))
+    const mIdx = Math.max(0, Math.min(MINS.length-1, Math.round((minRef.current?.scrollTop  ?? 0) / ITEM_H)))
+    onChange(`${String(h).padStart(2,'0')}:${String(MINS[mIdx]).padStart(2,'0')}`)
     setOpen(false)
   }
 
-  const colBox: React.CSSProperties = {
-    height: `${ITEM_H * 4}px`, overflowY: 'auto', width: '54px',
-    border: '1px solid #e5e7eb', borderRadius: '8px',
+  const colStyle: React.CSSProperties = {
+    height: `${ITEM_H * VISIBLE}px`,
+    overflowY: 'scroll',
+    width: '62px',
     scrollSnapType: 'y mandatory',
+    position: 'relative',
+    borderRadius: '8px',
+    border: '1px solid #e5e7eb',
   }
-  const itemBase = (selected: boolean): React.CSSProperties => ({
-    height: `${ITEM_H}px`, display:'flex', alignItems:'center', justifyContent:'center',
-    scrollSnapAlign: 'start', cursor: 'pointer', fontSize: '20px', fontWeight: 600,
-    userSelect: 'none',
-    backgroundColor: selected ? '#0d9488' : 'transparent',
-    color: selected ? 'white' : '#374151',
-    transition: 'background-color 0.12s',
-  })
+
+  const itemStyle: React.CSSProperties = {
+    height: `${ITEM_H}px`,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    scrollSnapAlign: 'start',
+    fontSize: '22px', fontWeight: 700,
+    color: '#374151', userSelect: 'none', cursor: 'pointer',
+    flexShrink: 0,
+  }
+
+  const padStyle: React.CSSProperties = { height: `${ITEM_H * PAD}px`, flexShrink: 0 }
+
+  // Hours array: PAD blanks + 00–23 + PAD blanks
+  const hourItems = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+  // Minutes array: PAD blanks + 00,05,…,55 + PAD blanks
+  const minItems  = MINS.map(m => String(m).padStart(2, '0'))
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', ...style }}>
-      {/* Display button */}
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        style={{
-          width:'100%', padding:'8px 12px', border:'1px solid #d1d5db',
-          borderRadius:'6px', fontSize:'15px', fontWeight:600, letterSpacing:'2px',
-          color:'#1f2937', backgroundColor:'white', cursor:'pointer',
-          fontFamily:'monospace', textAlign:'center',
-          boxSizing:'border-box',
-        }}
-      >
+      {/* Trigger button */}
+      <button type="button" onClick={() => setOpen(v => !v)} style={{
+        width:'100%', padding:'8px 12px', border:'1px solid #d1d5db',
+        borderRadius:'6px', fontSize:'15px', fontWeight:600, letterSpacing:'2px',
+        color:'#1f2937', backgroundColor:'white', cursor:'pointer',
+        fontFamily:'monospace', textAlign:'center', boxSizing:'border-box',
+      }}>
         {value || '--:--'}
       </button>
 
-      {/* Dropdown picker */}
       {open && (
         <div style={{
           position:'absolute', top:'calc(100% + 4px)', left:0, right:0,
           zIndex:1200, backgroundColor:'white',
           border:'1px solid #e5e7eb', borderRadius:'12px',
           boxShadow:'0 8px 32px rgba(0,0,0,0.18)',
-          padding:'14px 12px 12px',
-          minWidth:'160px',
+          padding:'14px 12px 12px', minWidth:'170px',
         }}>
           {/* Column headers */}
           <div style={{ display:'flex', justifyContent:'center', gap:'8px', marginBottom:'6px', direction:'ltr' }}>
-            <span style={{ width:'54px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>שעה</span>
-            <span style={{ width:'14px' }} />
-            <span style={{ width:'54px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>דקות</span>
+            <span style={{ width:'62px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>שעה</span>
+            <span style={{ width:'18px' }} />
+            <span style={{ width:'62px', textAlign:'center', fontSize:'11px', color:'#9ca3af', fontWeight:600 }}>דקות</span>
           </div>
 
-          {/* Scroll columns */}
+          {/* Drums */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'14px', direction:'ltr' }}>
-            {/* Hours */}
-            <div ref={hourRef} style={colBox} onScroll={handleHourScroll}>
-              {Array.from({length:24},(_,i)=>(
-                <div key={i} style={itemBase(tempH===i)} onClick={()=>{
-                  setTempH(i)
-                  if(hourRef.current) hourRef.current.scrollTop = i * ITEM_H
+
+            {/* Hours drum */}
+            <div style={{ position:'relative' }}>
+              {/* Selection highlight bar */}
+              <div style={{ position:'absolute', top:`${PAD*ITEM_H}px`, left:0, right:0,
+                height:`${ITEM_H}px`, backgroundColor:'rgba(13,148,136,0.12)',
+                borderTop:'2px solid #0d9488', borderBottom:'2px solid #0d9488',
+                pointerEvents:'none', borderRadius:'4px', zIndex:1 }} />
+              <div ref={hourRef} style={colStyle}
+                onScroll={e => {
+                  // snap helper: after momentum, align to nearest
+                  const el = e.currentTarget
+                  clearTimeout((el as any)._t)
+                  ;(el as any)._t = setTimeout(() => {
+                    const idx = Math.round(el.scrollTop / ITEM_H)
+                    el.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+                  }, 120)
                 }}>
-                  {String(i).padStart(2,'0')}
-                </div>
-              ))}
+                <div style={padStyle} />
+                {hourItems.map((h, i) => (
+                  <div key={i} style={itemStyle}
+                    onClick={() => hourRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' })}>
+                    {h}
+                  </div>
+                ))}
+                <div style={padStyle} />
+              </div>
             </div>
 
-            <span style={{ fontSize:'22px', fontWeight:700, color:'#374151', lineHeight:1 }}>:</span>
+            <span style={{ fontSize:'24px', fontWeight:700, color:'#374151', lineHeight:1, marginBottom:`${PAD*2}px` }}>:</span>
 
-            {/* Minutes (5-min steps) */}
-            <div ref={minRef} style={colBox} onScroll={handleMinScroll}>
-              {MINS.map((m,mi)=>(
-                <div key={m} style={itemBase(tempM===m)} onClick={()=>{
-                  setTempM(m)
-                  if(minRef.current) minRef.current.scrollTop = mi * ITEM_H
+            {/* Minutes drum */}
+            <div style={{ position:'relative' }}>
+              <div style={{ position:'absolute', top:`${PAD*ITEM_H}px`, left:0, right:0,
+                height:`${ITEM_H}px`, backgroundColor:'rgba(13,148,136,0.12)',
+                borderTop:'2px solid #0d9488', borderBottom:'2px solid #0d9488',
+                pointerEvents:'none', borderRadius:'4px', zIndex:1 }} />
+              <div ref={minRef} style={colStyle}
+                onScroll={e => {
+                  const el = e.currentTarget
+                  clearTimeout((el as any)._t)
+                  ;(el as any)._t = setTimeout(() => {
+                    const idx = Math.round(el.scrollTop / ITEM_H)
+                    el.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+                  }, 120)
                 }}>
-                  {String(m).padStart(2,'0')}
-                </div>
-              ))}
+                <div style={padStyle} />
+                {minItems.map((m, i) => (
+                  <div key={i} style={itemStyle}
+                    onClick={() => minRef.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' })}>
+                    {m}
+                  </div>
+                ))}
+                <div style={padStyle} />
+              </div>
             </div>
           </div>
 
           {/* Confirm / Cancel */}
           <div style={{ display:'flex', gap:'8px' }}>
-            <button
-              type="button" onClick={confirm}
-              style={{
-                flex:1, backgroundColor:'#0d9488', color:'white', border:'none',
-                borderRadius:'8px', padding:'10px', fontSize:'14px', fontWeight:700,
-                cursor:'pointer', fontFamily:"'Rubik',sans-serif",
-              }}
-            >
-              ✓ אישור
-            </button>
-            <button
-              type="button" onClick={()=>setOpen(false)}
-              style={{
-                padding:'10px 14px', backgroundColor:'#f3f4f6', color:'#374151',
-                border:'none', borderRadius:'8px', fontSize:'13px',
-                cursor:'pointer', fontFamily:"'Rubik',sans-serif",
-              }}
-            >
-              ביטול
-            </button>
+            <button type="button" onClick={confirm} style={{
+              flex:1, backgroundColor:'#0d9488', color:'white', border:'none',
+              borderRadius:'8px', padding:'10px', fontSize:'14px', fontWeight:700,
+              cursor:'pointer', fontFamily:"'Rubik',sans-serif",
+            }}>✓ אישור</button>
+            <button type="button" onClick={() => setOpen(false)} style={{
+              padding:'10px 14px', backgroundColor:'#f3f4f6', color:'#374151',
+              border:'none', borderRadius:'8px', fontSize:'13px',
+              cursor:'pointer', fontFamily:"'Rubik',sans-serif",
+            }}>ביטול</button>
           </div>
         </div>
       )}
