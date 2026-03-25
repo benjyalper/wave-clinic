@@ -118,6 +118,11 @@ export default function CalendarPage() {
   const calendarBodyRef = useRef<HTMLDivElement>(null)
 
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(()=>{
+    const check=()=>setIsMobile(window.innerWidth<600)
+    check(); window.addEventListener('resize',check); return()=>window.removeEventListener('resize',check)
+  },[])
 
   // ── new-appointment modal ──
   const [modal, setModal] = useState({ open:false, date:'', startTime:'', endTime:'' })
@@ -383,13 +388,24 @@ export default function CalendarPage() {
 
   // ── shared modal overlay ──
   const ModalOverlay=({onClose, children}:{onClose:()=>void; children:React.ReactNode})=>(
-    <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.4)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}
+    <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.45)',zIndex:100,display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',padding:isMobile?'0':'16px'}}
       onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
-      <div dir="rtl" style={{backgroundColor:'white',borderRadius:'12px',width:'100%',maxWidth:'520px',boxShadow:'0 8px 32px rgba(0,0,0,0.2)',fontFamily:"'Rubik',sans-serif",overflow:'hidden'}}>
+      <div dir="rtl" style={{
+        backgroundColor:'white',
+        borderRadius:isMobile?'16px 16px 0 0':'12px',
+        width:'100%',maxWidth:'520px',
+        boxShadow:'0 -4px 32px rgba(0,0,0,0.15)',
+        fontFamily:"'Rubik',sans-serif",
+        overflowY:'auto',
+        maxHeight:isMobile?'92vh':'90vh',
+        display:'flex',flexDirection:'column',
+      }}>
         {children}
       </div>
     </div>
   )
+  // 2-col grid on desktop, 1-col on mobile
+  const twoCol: React.CSSProperties = {display:'grid', gridTemplateColumns: isMobile?'1fr':'1fr 1fr', gap:'12px'}
 
   const titleText=viewMode==='month'?formatMonthRange(monthDate):formatWeekRange(weekStart)
   const editApptTreatmentName=editModal.appt?.treatmentType?.name||(editModal.treatmentTypeId?treatmentTypes.find(t=>t.id===Number(editModal.treatmentTypeId))?.name:'')
@@ -521,16 +537,16 @@ export default function CalendarPage() {
                       </div>
                     )
                   })}
-                  {/* appointment blocks + current-time indicator overlay */}
+                  {/* overlay: appointment blocks + current-time line (all pointerEvents:none except blocks) */}
                   <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'40px repeat(6,minmax(60px,1fr))',direction:'rtl',pointerEvents:'none',minWidth:'420px'}}>
                     <div/>
                     {weekDays.map((day,colIdx)=>{
                       const isDayToday=isCurrentWeek&&isSameDay(day,today)
                       return(
-                        <div key={colIdx} style={{position:'relative',pointerEvents:'auto'}}>
-                          {/* red current-time line — inside the correct column, no % math needed */}
+                        <div key={colIdx} style={{position:'relative',pointerEvents:'none'}}>
+                          {/* red line stays inside the correct column cell */}
                           {isDayToday&&currentTimeTop>0&&(
-                            <div style={{position:'absolute',top:`${currentTimeTop}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:10,pointerEvents:'none'}}>
+                            <div style={{position:'absolute',top:`${currentTimeTop}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:10}}>
                               <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
                             </div>
                           )}
@@ -541,6 +557,7 @@ export default function CalendarPage() {
                               left:'2px',right:'2px',
                               height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
                               zIndex:5,
+                              pointerEvents:'auto', // only blocks are clickable, not empty column area
                             }}/>
                           ))}
                         </div>
@@ -577,7 +594,13 @@ export default function CalendarPage() {
                   })}
                   <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'56px 1fr',pointerEvents:'none'}}>
                     <div/>
-                    <div style={{position:'relative',pointerEvents:'auto'}}>
+                    <div style={{position:'relative',pointerEvents:'none'}}>
+                      {/* red line for day view */}
+                      {isSameDay(weekDays[0],today)&&currentTimeTop>0&&(
+                        <div style={{position:'absolute',top:`${currentTimeTop}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:10}}>
+                          <div style={{position:'absolute',left:'-3px',top:'-4px',width:'10px',height:'10px',borderRadius:'50%',backgroundColor:'#ef4444'}}/>
+                        </div>
+                      )}
                       {getApptBlocksForDay(weekDays[0]).map(appt=>(
                         <ApptBlock key={appt.id} appt={appt} extraStyle={{
                           position:'absolute',
@@ -585,6 +608,7 @@ export default function CalendarPage() {
                           left:'4px',right:'4px',
                           height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
                           zIndex:5,
+                          pointerEvents:'auto',
                         }}/>
                       ))}
                     </div>
@@ -609,7 +633,7 @@ export default function CalendarPage() {
             {/* body */}
             <div style={{padding:'20px',display:'flex',flexDirection:'column',gap:'14px'}}>
               {/* patient + phone */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+              <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>שם המטופל <span style={{color:'#ef4444'}}>*</span></label>
                   <div style={{position:'relative'}}>
@@ -649,7 +673,7 @@ export default function CalendarPage() {
                 </div>
               </div>
               {/* date + treatment type */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+              <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>תאריך</label>
                   <input type="date" value={modal.date} onChange={e=>setModal(m=>({...m,date:e.target.value}))} style={inputStyle}/>
@@ -663,7 +687,7 @@ export default function CalendarPage() {
                 </div>
               </div>
               {/* times */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+              <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>שעת התחלה</label>
                   <input type="time" value={modal.startTime}
@@ -709,7 +733,7 @@ export default function CalendarPage() {
             <div style={{padding:'18px 20px',display:'flex',flexDirection:'column',gap:'14px'}}>
 
               {/* patient name + date */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+              <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>שם המטופל <span style={{color:'#ef4444'}}>*</span></label>
                   <div style={{border:'1px solid #d1d5db',borderRadius:'8px',padding:'9px 11px',fontSize:'13px',backgroundColor:'#f9fafb',color:'#374151',fontWeight:500}}>
@@ -749,7 +773,7 @@ export default function CalendarPage() {
               </div>
 
               {/* start + end time */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+              <div style={{...twoCol}}>
                 <div>
                   <label style={labelStyle}>שעת התחלה</label>
                   <input type="time" value={editModal.startTime}
