@@ -165,7 +165,7 @@ export default function NewPatientPage() {
             <div className="px-6 py-5">
 
               {/* Row 1: First name + Last name */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     שם פרטי <span className="text-red-500">*</span>
@@ -197,7 +197,7 @@ export default function NewPatientPage() {
               </div>
 
               {/* Row 2: Mobile + Phone2 */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     טלפון נייד <span className="text-red-500">*</span>
@@ -243,7 +243,7 @@ export default function NewPatientPage() {
               </div>
 
               {/* Row 4: Birth date + ID */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     תאריך לידה
@@ -273,7 +273,7 @@ export default function NewPatientPage() {
               </div>
 
               {/* Row 5: Address + HMO */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     כתובת

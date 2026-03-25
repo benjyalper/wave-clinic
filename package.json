@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev --port 3006",
-    "build": "node node_modules/next/dist/bin/next build",
+    "build": "node scripts/generate-icons.js && node node_modules/next/dist/bin/next build",
     "start": "node server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
