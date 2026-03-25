@@ -1006,7 +1006,11 @@ export default function CalendarPage() {
                 {/* action buttons – wrap naturally on small screens */}
                 <button onClick={()=>{closeEditModal();router.push(`/patients/${editModal.appt!.patient.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתיק האישי</button>
-                <button onClick={()=>{ const a=editModal.appt!; closeEditModal(); setTimeout(()=>openPayModal(a),0) }}
+                <button onClick={()=>{
+                    const a=editModal.appt!
+                    setEditModal(m=>({...m,open:false,appt:null}))
+                    setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:'',qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
+                  }}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתשלום</button>
                 <button onClick={()=>{closeEditModal();router.push(`/invoices/new?patientId=${editModal.appt!.patient.id}&appointmentId=${editModal.appt!.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לחשבון הלקוח</button>
