@@ -323,6 +323,62 @@ export default function CalendarPage() {
   const [saving, setSaving] = useState(false)
   const patientSearchRef = useRef<HTMLInputElement>(null)
 
+  // ── payment modal ──
+  const [payModal, setPayModal] = useState<{
+    open:boolean; appt:Appointment|null;
+    toName:string;
+    items:Array<{treatmentTypeId:string; freeText:string; qty:number; price:number}>;
+    payMethod:string; payMethod2:string; notes:string; saving:boolean;
+  }>({open:false,appt:null,toName:'',items:[],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
+
+  const openPayModal=(appt:Appointment)=>{
+    setPayModal({
+      open:true, appt,
+      toName:`${appt.patient.firstName} ${appt.patient.lastName}`,
+      items:[{treatmentTypeId:appt.treatmentType?String(appt.treatmentType.id):'', freeText:'', qty:1, price:0}],
+      payMethod:'מזומן', payMethod2:'ללא', notes:'', saving:false,
+    })
+  }
+  const closePayModal=()=>setPayModal(m=>({...m,open:false}))
+
+  const handleGenerateDoc=async()=>{
+    if(!payModal.appt) return
+    setPayModal(m=>({...m,saving:true}))
+    try{
+      const token=localStorage.getItem('wave_token')
+      const d=new Date(payModal.appt.startTime)
+      const HM=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+      const dateStr=`${d.getDate()} ${HM[d.getMonth()]} ${d.getFullYear()}`
+      const items=payModal.items.map(it=>({
+        description: it.freeText||treatmentTypes.find(t=>t.id===Number(it.treatmentTypeId))?.name||'טיפול',
+        date: dateStr,
+        quantity: it.qty,
+        unitPrice: it.price,
+        total: Number((it.qty*it.price).toFixed(2)),
+      }))
+      const notes=[payModal.notes, payModal.payMethod2&&payModal.payMethod2!=='ללא'?`תשלום שני: ${payModal.payMethod2}`:''].filter(Boolean).join(' | ')
+      const res=await fetch('/api/invoices',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+        body:JSON.stringify({
+          patientId:payModal.appt.patient.id,
+          invoiceType:'חשבונית מס קבלה',
+          issueDate:new Date().toISOString(),
+          items, vatRate:17,
+          paymentMethod:payModal.payMethod,
+          paymentDate:new Date().toISOString(),
+          notes,
+        }),
+      })
+      const data=await res.json()
+      if(!res.ok) throw new Error(data.error||'שגיאה')
+      router.push(`/invoices/${data.id}`)
+    }catch(e:any){
+      alert(e.message||'שגיאה ביצירת מסמך')
+      setPayModal(m=>({...m,saving:false}))
+    }
+  }
+
   // ── edit-appointment modal ──
   const [editModal, setEditModal] = useState<{
     open:boolean; appt:Appointment|null;
@@ -950,7 +1006,8 @@ export default function CalendarPage() {
                 {/* action buttons – wrap naturally on small screens */}
                 <button onClick={()=>{closeEditModal();router.push(`/patients/${editModal.appt!.patient.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתיק האישי</button>
-                <button style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתשלום</button>
+                <button onClick={()=>{closeEditModal();openPayModal(editModal.appt!)}}
+                  style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לתשלום</button>
                 <button onClick={()=>{closeEditModal();router.push(`/invoices/new?patientId=${editModal.appt!.patient.id}&appointmentId=${editModal.appt!.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לחשבון הלקוח</button>
               </div>
@@ -1019,6 +1076,101 @@ export default function CalendarPage() {
             </div>
           </ModalOverlay>
         )}
+
+        {/* ── Payment modal ── */}
+        {payModal.open&&payModal.appt&&(
+          <ModalOverlay onClose={closePayModal}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'18px'}}>
+              <button onClick={closePayModal} style={{color:'#6b7280',background:'none',border:'none',cursor:'pointer',fontSize:'22px',lineHeight:1}}>×</button>
+              <h2 style={{margin:0,fontSize:'16px',fontWeight:700,color:'#1f2937'}}>תשלום - {payModal.appt.patient.firstName} {payModal.appt.patient.lastName}</h2>
+            </div>
+
+            {/* לכבוד */}
+            <div style={{marginBottom:'14px'}}>
+              <label style={labelStyle}>לכבוד</label>
+              <input value={payModal.toName} onChange={e=>setPayModal(m=>({...m,toName:e.target.value}))} style={inputStyle}/>
+            </div>
+
+            {/* Items */}
+            <div style={{marginBottom:'4px'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 72px 88px',gap:'6px',marginBottom:'4px'}}>
+                <span style={{fontSize:'12px',color:'#6b7280',fontWeight:600}}>סוג הטיפול</span>
+                <span style={{fontSize:'12px',color:'#6b7280',fontWeight:600,textAlign:'center'}}>כמות</span>
+                <span style={{fontSize:'12px',color:'#6b7280',fontWeight:600,textAlign:'center'}}>סכום לתשלום</span>
+              </div>
+              {payModal.items.map((it,idx)=>(
+                <div key={idx} style={{display:'grid',gridTemplateColumns:'1fr 72px 88px',gap:'6px',marginBottom:'6px',alignItems:'center'}}>
+                  {it.freeText!==undefined&&it.treatmentTypeId===''
+                    ?<input value={it.freeText} onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,freeText:e.target.value}:x)}))}
+                        placeholder="תיאור חופשי" style={{...inputStyle,fontSize:'13px',padding:'6px 8px'}}/>
+                    :<select value={it.treatmentTypeId}
+                        onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,treatmentTypeId:e.target.value}:x)}))}
+                        style={{...inputStyle,fontSize:'13px',padding:'6px 8px',cursor:'pointer'}}>
+                        <option value="">בחר סוג טיפול</option>
+                        {treatmentTypes.map(tt=><option key={tt.id} value={tt.id}>{tt.name}</option>)}
+                      </select>
+                  }
+                  <input type="number" min="1" value={it.qty}
+                    onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,qty:Number(e.target.value)||1}:x)}))}
+                    style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
+                  <input type="number" min="0" value={it.price||''}
+                    onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,price:Number(e.target.value)||0}:x)}))}
+                    placeholder="סכום"
+                    style={{...inputStyle,fontSize:'13px',padding:'6px 8px',textAlign:'center'}}/>
+                </div>
+              ))}
+              <div style={{display:'flex',gap:'8px',marginBottom:'12px',marginTop:'4px'}}>
+                <button onClick={()=>setPayModal(m=>({...m,items:[...m.items,{treatmentTypeId:'',freeText:undefined as any,qty:1,price:0}]}))}
+                  style={{background:'none',border:'1px solid #d1d5db',borderRadius:'6px',padding:'4px 10px',fontSize:'13px',cursor:'pointer',color:'#374151'}}>+</button>
+                <button onClick={()=>setPayModal(m=>({...m,items:[...m.items,{treatmentTypeId:'',freeText:'',qty:1,price:0}]}))}
+                  style={{background:'none',border:'1px solid #d1d5db',borderRadius:'6px',padding:'4px 12px',fontSize:'12px',cursor:'pointer',color:'#6b7280'}}>להוספת פרט חופשי</button>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div style={{textAlign:'right',marginBottom:'14px',fontSize:'14px',fontWeight:700,color:'#d97706'}}>
+              סה"כ לחיוב (כולל מע"מ): {payModal.items.reduce((s,i)=>s+i.qty*i.price,0).toFixed(2)} ₪
+            </div>
+
+            {/* Payment methods */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'14px'}}>
+              <div>
+                <label style={labelStyle}>אמצעי תשלום</label>
+                <select value={payModal.payMethod} onChange={e=>setPayModal(m=>({...m,payMethod:e.target.value}))} style={{...inputStyle,cursor:'pointer'}}>
+                  {['מזומן','כרטיס אשראי','העברה בנקאית',"צ'ק",'ביט','פייבוקס'].map(p=><option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>אמצעי תשלום שני</label>
+                <select value={payModal.payMethod2} onChange={e=>setPayModal(m=>({...m,payMethod2:e.target.value}))} style={{...inputStyle,cursor:'pointer'}}>
+                  {['ללא','מזומן','כרטיס אשראי','העברה בנקאית',"צ'ק",'ביט','פייבוקס'].map(p=><option key={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div style={{marginBottom:'14px'}}>
+              <label style={labelStyle}>הערות - יופיעו על גבי המסמך</label>
+              <textarea value={payModal.notes} onChange={e=>setPayModal(m=>({...m,notes:e.target.value}))}
+                rows={3} style={{...inputStyle,resize:'vertical',fontFamily:"'Rubik',sans-serif"}}/>
+            </div>
+
+            {/* Footer */}
+            <div style={{borderTop:'1px solid #e5e7eb',paddingTop:'14px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'10px',flexWrap:'wrap'}}>
+              <button onClick={handleGenerateDoc} disabled={payModal.saving}
+                style={{padding:'10px 28px',borderRadius:'8px',fontSize:'14px',border:'none',
+                  backgroundColor:payModal.saving?'#9ca3af':'#2c3444',color:'white',
+                  cursor:payModal.saving?'not-allowed':'pointer',fontWeight:600}}>
+                {payModal.saving?'מייצר...':'הפקת מסמך'}
+              </button>
+              <button onClick={closePayModal}
+                style={{padding:'10px 18px',borderRadius:'8px',fontSize:'13px',border:'1px solid #d1d5db',backgroundColor:'white',color:'#374151',cursor:'pointer'}}>
+                ביטול
+              </button>
+            </div>
+          </ModalOverlay>
+        )}
+
       </div>
     </>
   )
