@@ -372,6 +372,12 @@ export default function CalendarPage() {
       })
       const data=await res.json()
       if(!res.ok) throw new Error(data.error||'שגיאה')
+      // mark appointment as paid
+      await fetch(`/api/appointments/${payModal.appt!.id}`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+        body:JSON.stringify({paid:true,paymentMethod:payModal.payMethod}),
+      })
       router.push(`/invoices/${data.id}`)
     }catch(e:any){
       alert(e.message||'שגיאה ביצירת מסמך')
