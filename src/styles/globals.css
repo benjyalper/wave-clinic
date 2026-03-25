@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 :root {
   --teal-primary: #2bafa0;
   --navy-header: #2c3444;

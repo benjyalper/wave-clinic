@@ -75,9 +75,13 @@ export default function AppHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileDotsOpen, setMobileDotsOpen] = useState(false)
   const [searchVal, setSearchVal] = useState('')
+  const [searchResults, setSearchResults] = useState<Array<{id:number;firstName:string;lastName:string;phone:string;idNumber:string}>>([])
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
   const reportsRef = useRef<HTMLDivElement>(null)
   const settingsRef = useRef<HTMLDivElement>(null)
   const dotsRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setTimeStr(formatHebrewTime(new Date()))
@@ -98,6 +102,9 @@ export default function AppHeader() {
       if (dotsRef.current && !dotsRef.current.contains(e.target as Node)) {
         setMobileDotsOpen(false)
       }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -112,6 +119,31 @@ export default function AppHeader() {
     }
     return () => { document.body.style.overflow = '' }
   }, [mobileMenuOpen])
+
+  // live patient search
+  useEffect(() => {
+    const q = searchVal.trim()
+    if (q.length < 2) { setSearchResults([]); setSearchOpen(false); return }
+    setSearchLoading(true)
+    const t = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('wave_token')
+        const res = await fetch(`/api/patients?search=${encodeURIComponent(q)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (Array.isArray(data)) { setSearchResults(data); setSearchOpen(true) }
+      } catch {}
+      setSearchLoading(false)
+    }, 220)
+    return () => clearTimeout(t)
+  }, [searchVal])
+
+  function handleSelectPatient(id: number) {
+    router.push(`/patients/${id}`)
+    setSearchVal('')
+    setSearchOpen(false)
+  }
 
   function handleLogout() {
     if (typeof window !== 'undefined') {
@@ -254,21 +286,59 @@ export default function AppHeader() {
 
         {/* Center: Search bar */}
         <div className="flex-1 flex justify-center px-2">
-          <div className="relative w-full max-w-md">
+          <div ref={searchRef} className="relative w-full max-w-md">
             <input
               type="text"
               value={searchVal}
               onChange={e => setSearchVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') { setSearchOpen(false); setSearchVal('') } }}
               placeholder='חיפוש ע"פ שם/טלפון/ת.ז.'
               className="w-full bg-white/15 text-white placeholder-gray-400 rounded-lg px-4 py-1.5 text-sm border border-white/20 focus:outline-none focus:border-white/50 focus:bg-white/20 transition-all"
               style={{ direction: 'rtl' }}
             />
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              width="16" height="16" fill="currentColor" viewBox="0 0 20 20"
-            >
-              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
+            {/* search / loading icon */}
+            {searchLoading
+              ? <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{width:16,height:16,border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'white',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
+              : <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+            }
+
+            {/* Results dropdown */}
+            {searchOpen && (
+              <div style={{
+                position:'absolute', top:'calc(100% + 6px)', right:0, left:0,
+                backgroundColor:'white', borderRadius:'10px',
+                boxShadow:'0 8px 32px rgba(0,0,0,0.18)',
+                maxHeight:'320px', overflowY:'auto',
+                zIndex:200, border:'1px solid #e5e7eb', direction:'rtl',
+              }}>
+                {searchResults.length === 0 ? (
+                  <div style={{padding:'16px',textAlign:'center',color:'#9ca3af',fontSize:'13px'}}>
+                    לא נמצאו מטופלים
+                  </div>
+                ) : searchResults.map(p => (
+                  <div
+                    key={p.id}
+                    onMouseDown={() => handleSelectPatient(p.id)}
+                    style={{
+                      padding:'10px 14px', cursor:'pointer',
+                      borderBottom:'1px solid #f3f4f6',
+                      display:'flex', justifyContent:'space-between', alignItems:'center',
+                      gap:'12px',
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor='#f0fdf4'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor='white'}
+                  >
+                    <span style={{fontSize:'12px',color:'#9ca3af',fontFamily:'monospace',direction:'ltr'}}>{p.phone}</span>
+                    {p.idNumber && <span style={{fontSize:'11px',color:'#d1d5db',fontFamily:'monospace'}}>{p.idNumber}</span>}
+                    <span style={{fontSize:'14px',fontWeight:600,color:'#1f2937',flex:1,textAlign:'right'}}>
+                      {p.firstName} {p.lastName}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
