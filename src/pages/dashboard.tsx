@@ -74,6 +74,9 @@ export default function Dashboard() {
   const [greeting, setGreeting] = useState('')
   const [searchVal, setSearchVal] = useState('')
   const [todayAppts, setTodayAppts] = useState<TodayAppt[]|null>(null)
+  const [weekCount, setWeekCount] = useState<number|null>(null)
+  const [activePatients, setActivePatients] = useState<number|null>(null)
+  const [monthRevenue, setMonthRevenue] = useState<number|null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -92,44 +95,53 @@ export default function Dashboard() {
     setReminderDate(`${yyyy}-${mm}-${dd}`)
   }, [router])
 
-  // Separate effect — fetch today's appointments once on mount
-  useEffect(() => {
+  const fetchStats = (resetLoading = false) => {
     const token = localStorage.getItem('wave_token')
-    if (!token) return
-    // Build local-date boundaries to avoid timezone edge cases
-    const now = new Date()
-    const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-    const from = new Date(localDate + 'T00:00:00') // parsed as local time
-    const to   = new Date(localDate + 'T23:59:59')
-    fetch(`/api/appointments?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        const active = (data as any[]).filter(a => a.status !== 'cancelled')
-        active.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-        setTodayAppts(active)
-      }
-    }).catch(() => setTodayAppts([]))
-  }, [])
+    if (!token) { setTodayAppts([]); setWeekCount(0); setActivePatients(0); setMonthRevenue(0); return }
+    if (resetLoading) setTodayAppts(null)
+    fetch('/api/appointments', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(data => {
+        if (!Array.isArray(data)) { setTodayAppts([]); setWeekCount(0); setActivePatients(0); setMonthRevenue(0); return }
+        const now = new Date()
+        const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate()
 
-  const refreshTodayAppts = () => {
-    const token = localStorage.getItem('wave_token')
-    if (!token) return
-    setTodayAppts(null)
-    const now = new Date()
-    const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-    const from = new Date(localDate + 'T00:00:00')
-    const to   = new Date(localDate + 'T23:59:59')
-    fetch(`/api/appointments?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        const active = (data as any[]).filter(a => a.status !== 'cancelled')
-        active.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-        setTodayAppts(active)
-      }
-    }).catch(() => setTodayAppts([]))
+        // Today
+        const todayArr = (data as any[]).filter(a => {
+          if (a.status === 'cancelled') return false
+          const dt = new Date(a.startTime)
+          return dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d
+        })
+        todayArr.sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+        setTodayAppts(todayArr)
+
+        // This week (Sun–Sat)
+        const weekStart = new Date(y, mo, d - now.getDay())
+        const weekEnd = new Date(weekStart.getTime() + 7 * 86400000)
+        const weekArr = (data as any[]).filter(a => {
+          if (a.status === 'cancelled') return false
+          const dt = new Date(a.startTime)
+          return dt >= weekStart && dt < weekEnd
+        })
+        setWeekCount(weekArr.length)
+
+        // Active patients (unique patients with any non-cancelled appointment)
+        const patientIds = new Set((data as any[]).filter(a => a.status !== 'cancelled').map((a: any) => a.patientId))
+        setActivePatients(patientIds.size)
+
+        // This month revenue (paid)
+        const rev = (data as any[]).reduce((sum: number, a: any) => {
+          if (a.status === 'cancelled' || !a.paid) return sum
+          const dt = new Date(a.startTime)
+          return dt.getFullYear() === y && dt.getMonth() === mo ? sum + (a.price || 0) : sum
+        }, 0)
+        setMonthRevenue(rev)
+      }).catch(() => { setTodayAppts([]); setWeekCount(0); setActivePatients(0); setMonthRevenue(0) })
   }
+
+  // Fetch stats once on mount
+  useEffect(() => { fetchStats() }, [])
+
+  const refreshTodayAppts = () => fetchStats(true)
 
   const addTask = () => {
     if (newTask.trim()) {
@@ -150,7 +162,7 @@ export default function Dashboard() {
       <Head>
         <title>Wave - לוח בקרה</title>
       </Head>
-      <div dir="rtl" style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Rubik', sans-serif", overflowX: 'hidden', maxWidth: '100vw' }}>
+      <div dir="rtl" style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Rubik', sans-serif" }}>
         <AppHeader />
 
         {/* ─────────────── MOBILE LAYOUT (below md) ─────────────── */}
@@ -163,7 +175,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <span className="text-lg">🌿</span>
               <span className="text-gray-700 font-medium text-sm">
-                {greeting}{todayAppts && todayAppts.length > 0 ? `, יש לך ${todayAppts.length} תורים היום.` : ', לא נקבעו טיפולים להיום.'}
+                {greeting}{todayAppts === null ? '...' : todayAppts.length > 0 ? `, יש לך ${todayAppts.length} תורים היום.` : ', לא נקבעו טיפולים להיום.'}
               </span>
             </div>
             <button
@@ -373,7 +385,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🌿</span>
                   <span className="text-gray-700 font-medium text-sm">
-                    {greeting}, לא נקבעו טיפולים להיום.
+                    {greeting}{todayAppts === null ? '...' : todayAppts.length > 0 ? `, יש לך ${todayAppts.length} תורים היום.` : ', לא נקבעו טיפולים להיום.'}
                   </span>
                 </div>
                 <button
@@ -432,15 +444,21 @@ export default function Dashboard() {
               {/* Quick stats */}
               <div className="grid grid-cols-3 gap-3 mt-4">
                 <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: '#2bafa0' }}>0</div>
+                  <div className="text-2xl font-bold" style={{ color: '#2bafa0' }}>
+                    {weekCount === null ? '–' : weekCount}
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">תורים השבוע</div>
                 </div>
                 <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: '#27ae60' }}>0</div>
+                  <div className="text-2xl font-bold" style={{ color: '#27ae60' }}>
+                    {activePatients === null ? '–' : activePatients}
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">מטופלים פעילים</div>
                 </div>
                 <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-400">₪0</div>
+                  <div className="text-2xl font-bold text-gray-400">
+                    {monthRevenue === null ? '–' : `₪${monthRevenue.toLocaleString()}`}
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">הכנסות החודש</div>
                 </div>
               </div>
