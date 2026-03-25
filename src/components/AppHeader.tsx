@@ -213,7 +213,7 @@ export default function AppHeader() {
             {settingsOpen && (
               <div
                 className="dropdown-menu"
-                style={{ right: 0, left: 'auto', minWidth: '200px' }}
+                style={{ right: 0, left: 'auto', minWidth: '200px', maxHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
               >
                 {SETTINGS_SECTION_1.map((item) => (
                   item.href === '#' ? (
