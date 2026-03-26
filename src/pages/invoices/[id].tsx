@@ -55,36 +55,24 @@ export default function InvoicePage() {
   const [error, setError] = useState('')
   const wrapperRef = useRef<HTMLDivElement>(null)
   const invoiceRef = useRef<HTMLDivElement>(null)
-  const [wrapperHeight, setWrapperHeight] = useState<number | undefined>(undefined)
 
+  // CSS zoom scales the element AND its layout footprint (unlike transform),
+  // so no overflow clipping, no manual height calculation needed.
   const applyScale = useCallback(() => {
     const wrapper = wrapperRef.current
     const inv = invoiceRef.current
     if (!wrapper || !inv) return
     const NATURAL_WIDTH = 912 // 800px content + 56px*2 padding
     const available = wrapper.clientWidth
-    if (available >= NATURAL_WIDTH) {
-      inv.style.transform = ''
-      inv.style.transformOrigin = ''
-      inv.style.marginLeft = ''
-      inv.style.marginRight = ''
-      setWrapperHeight(undefined)
-    } else {
-      const scale = available / NATURAL_WIDTH
-      // Zero the auto-margins so element starts at x=0 (avoids overflow:hidden clipping)
-      inv.style.marginLeft = '0'
-      inv.style.marginRight = '0'
-      inv.style.transform = `scale(${scale})`
-      inv.style.transformOrigin = 'top left'
-      setWrapperHeight(Math.round(inv.scrollHeight * scale))
-    }
+    const scale = available < NATURAL_WIDTH ? available / NATURAL_WIDTH : 1
+    ;(inv.style as any).zoom = String(scale)
   }, [])
 
   useEffect(() => {
     if (!invoice) return
-    const t = setTimeout(applyScale, 60)
+    applyScale()
     window.addEventListener('resize', applyScale)
-    return () => { clearTimeout(t); window.removeEventListener('resize', applyScale) }
+    return () => window.removeEventListener('resize', applyScale)
   }, [invoice, applyScale])
 
   useEffect(() => {
@@ -120,8 +108,7 @@ export default function InvoicePage() {
             .invoice-page {
               box-shadow: none !important;
               margin: 0 auto !important;
-              transform: none !important;
-              transform-origin: unset !important;
+              zoom: 1 !important;
               width: 100% !important;
               padding: 24px 32px !important;
             }
@@ -168,8 +155,8 @@ export default function InvoicePage() {
         )}
       </div>
 
-      {/* Invoice document — wrapped in scaler so mobile shrinks proportionally */}
-      <div ref={wrapperRef} className="invoice-scaler" style={{ overflow: 'hidden', height: wrapperHeight }}>
+      {/* Invoice document — zoom scales element + layout footprint together on mobile */}
+      <div ref={wrapperRef} className="invoice-scaler">
       <div
         ref={invoiceRef}
         className="invoice-page"
