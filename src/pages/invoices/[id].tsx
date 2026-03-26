@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import AppHeader from '../../components/AppHeader'
@@ -53,6 +53,34 @@ export default function InvoicePage() {
   const { id } = router.query
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [error, setError] = useState('')
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const invoiceRef = useRef<HTMLDivElement>(null)
+  const [wrapperHeight, setWrapperHeight] = useState<number | undefined>(undefined)
+
+  const applyScale = useCallback(() => {
+    const wrapper = wrapperRef.current
+    const inv = invoiceRef.current
+    if (!wrapper || !inv) return
+    const NATURAL_WIDTH = 912 // 800px content + 56px*2 padding
+    const available = wrapper.clientWidth
+    if (available >= NATURAL_WIDTH) {
+      inv.style.transform = ''
+      inv.style.transformOrigin = ''
+      setWrapperHeight(undefined)
+    } else {
+      const scale = available / NATURAL_WIDTH
+      inv.style.transform = `scale(${scale})`
+      inv.style.transformOrigin = 'top center'
+      setWrapperHeight(Math.round(inv.scrollHeight * scale))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!invoice) return
+    const t = setTimeout(applyScale, 60)
+    window.addEventListener('resize', applyScale)
+    return () => { clearTimeout(t); window.removeEventListener('resize', applyScale) }
+  }, [invoice, applyScale])
 
   useEffect(() => {
     if (!id) return
@@ -81,7 +109,8 @@ export default function InvoicePage() {
           @media print {
             .no-print { display: none !important; }
             body { margin: 0; }
-            .invoice-page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
+            .invoice-page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; transform: none !important; transform-origin: unset !important; }
+            .invoice-scaler { height: auto !important; overflow: visible !important; }
           }
           body { background: #f0f2f5; font-family: 'Arial', 'Helvetica', sans-serif; }
         `}</style>
@@ -125,12 +154,14 @@ export default function InvoicePage() {
         )}
       </div>
 
-      {/* Invoice document */}
+      {/* Invoice document — wrapped in scaler so mobile shrinks proportionally */}
+      <div ref={wrapperRef} className="invoice-scaler" style={{ overflow: 'hidden', height: wrapperHeight }}>
       <div
+        ref={invoiceRef}
         className="invoice-page"
         dir="rtl"
         style={{
-          maxWidth: 800,
+          width: 800,
           margin: '24px auto',
           background: 'white',
           padding: '48px 56px',
@@ -260,6 +291,7 @@ export default function InvoicePage() {
         <div style={{ textAlign: 'right', fontWeight: 700, marginTop: 6, fontSize: 14 }}>
           סה"כ: {formatMoney(invoice.total)}
         </div>
+      </div>
       </div>
     </>
   )
