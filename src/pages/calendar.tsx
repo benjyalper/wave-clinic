@@ -1056,7 +1056,9 @@ export default function CalendarPage() {
                 ) : (
                   <button onClick={()=>{
                       const a=editModal.appt!
-                      setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:undefined as any,qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
+                      const ttId=a.treatmentType?String(a.treatmentType.id):''
+                      const initPrice=a.price||treatmentTypes.find(t=>t.id===a.treatmentType?.id)?.price||0
+                      setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:ttId,freeText:undefined as any,qty:1,price:initPrice,priceText:initPrice>0?String(initPrice):''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
                     }}
                     style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap',touchAction:'manipulation'}}>לתשלום</button>
                 )}
