@@ -63,11 +63,20 @@ const MOBILE_ACTIONS = [
   },
 ]
 
-interface TodayAppt { id:number; startTime:string; endTime:string; patient:{firstName:string;lastName:string} }
+interface TodayAppt {
+  id: number
+  startTime: string
+  endTime: string
+  price?: number
+  paid: boolean
+  patient: { id: number; firstName: string; lastName: string; phone?: string }
+  treatmentType: { name: string; price: number } | null
+}
 
 export default function Dashboard() {
   const router = useRouter()
   const [userName, setUserName] = useState('J')
+  const [businessName, setBusinessName] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const [newTask, setNewTask] = useState('')
   const [tasks, setTasks] = useState<string[]>([])
@@ -86,6 +95,8 @@ export default function Dashboard() {
       }
       const u = localStorage.getItem('wave_user') || 'J'
       setUserName(u)
+      const biz = localStorage.getItem('wave_business') || ''
+      setBusinessName(biz)
     }
     setGreeting(getGreeting())
     const today = new Date()
@@ -148,6 +159,20 @@ export default function Dashboard() {
   }, [])
 
   const refreshTodayAppts = () => fetchStats(true)
+
+  const handleMarkPaid = (appt: TodayAppt) => {
+    const token = localStorage.getItem('wave_token')
+    if (!token) return
+    const effectivePrice = appt.price || appt.treatmentType?.price || 0
+    fetch(`/api/appointments/${appt.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ paid: true, price: effectivePrice }),
+    })
+      .then(r => r.json())
+      .then(() => fetchStats())
+      .catch(() => {})
+  }
 
   const addTask = () => {
     if (newTask.trim()) {
@@ -383,6 +408,13 @@ export default function Dashboard() {
 
             {/* LEFT COLUMN - main content */}
             <div className="flex-1 min-w-0">
+              {/* Business name title */}
+              {businessName && (
+                <div style={{ textAlign: 'right', fontWeight: 700, fontSize: '18px', color: '#1f2937', marginBottom: '8px' }}>
+                  {businessName}
+                </div>
+              )}
+
               {/* Greeting banner */}
               <div
                 className="rounded-xl px-5 py-4 mb-5 flex items-center justify-between shadow-sm"
@@ -406,45 +438,145 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Common actions */}
+              {/* Today's appointments table */}
               <div className="bg-white rounded-xl shadow-sm p-5">
-                <h2
-                  className="font-bold text-base mb-4"
-                  style={{ color: '#2bafa0' }}
-                >
-                  פעולות נפוצות
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <button
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group"
-                    onClick={() => alert('סוגי טיפולים - בקרוב')}
-                  >
-                    <span className="text-2xl">✏️</span>
-                    <span className="text-sm text-gray-600 group-hover:text-teal-700 font-medium text-center">סוגי טיפולים</span>
-                  </button>
-
-                  <button
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group"
-                    onClick={() => alert('הגדרות - בקרוב')}
-                  >
-                    <span className="text-2xl">👤</span>
-                    <span className="text-sm text-gray-600 group-hover:text-teal-700 font-medium text-center">הגדרות</span>
-                  </button>
-
-                  <Link href="/calendar" className="no-underline">
-                    <button className="w-full flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group">
-                      <span className="text-2xl">📅</span>
-                      <span className="text-sm text-gray-600 group-hover:text-teal-700 font-medium text-center">קביעת תור ביומן</span>
+                {/* Table header row */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {/* Print icon (no-op) */}
+                    <button className="p-1 rounded hover:bg-gray-100 transition-colors" title="הדפסה">
+                      <svg width="16" height="16" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M6 9V2h12v7" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <rect x="6" y="14" width="12" height="8" rx="1" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </button>
-                  </Link>
-
-                  <Link href="/patients/new" className="no-underline">
-                    <button className="w-full flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50 transition-all group">
-                      <span className="text-2xl">👥</span>
-                      <span className="text-sm text-gray-600 group-hover:text-teal-700 font-medium text-center">הוספת מטופל/ת</span>
+                    {/* Export icon (no-op) */}
+                    <button className="p-1 rounded hover:bg-gray-100 transition-colors" title="ייצוא">
+                      <svg width="16" height="16" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/>
+                        <polyline points="7 10 12 15 17 10" strokeLinecap="round" strokeLinejoin="round"/>
+                        <line x1="12" y1="15" x2="12" y2="3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </button>
-                  </Link>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-sm text-gray-700">מטופלים להיום</h2>
+                    <button onClick={refreshTodayAppts} className="p-1 rounded hover:bg-gray-100 transition-colors" title="רענן">
+                      <svg width="14" height="14" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M20 9A8 8 0 006.5 5.5L4 9m16 6l-2.5 3.5A8 8 0 013.9 15" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
+
+                {todayAppts === null ? (
+                  <div className="py-6 text-center text-gray-400 text-sm">טוען...</div>
+                ) : todayAppts.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <div className="text-gray-300 text-4xl mb-2">📅</div>
+                    <p className="text-gray-400 text-sm">לא נקבעו תורים להיום</p>
+                    <Link href="/calendar">
+                      <button className="mt-3 text-sm px-4 py-2 rounded-lg text-white" style={{ backgroundColor: '#2bafa0' }}>קבע תור חדש</button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Column headers */}
+                    <div className="flex items-center justify-between px-1 pb-2" style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <div style={{ width: '90px', textAlign: 'left' }}>
+                        <span className="text-xs text-gray-400">תשלום</span>
+                      </div>
+                      <div style={{ width: '90px', textAlign: 'center' }}>
+                        <span className="text-xs text-gray-400">שעה</span>
+                      </div>
+                      <div className="flex-1" style={{ textAlign: 'center' }}>
+                        <span className="text-xs text-gray-400">סוג טיפול</span>
+                      </div>
+                      <div style={{ width: '110px', textAlign: 'center' }}>
+                        <span className="text-xs text-gray-400">טלפון</span>
+                      </div>
+                      <div style={{ width: '120px', textAlign: 'right' }}>
+                        <span className="text-xs text-gray-400">שם מטופל</span>
+                      </div>
+                    </div>
+
+                    {todayAppts.map(a => {
+                      const s = new Date(a.startTime)
+                      const e = new Date(a.endTime)
+                      const fmt = (d: Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+                      const timeStr = `${fmt(s)}-${fmt(e)}`
+                      return (
+                        <div
+                          key={a.id}
+                          className="flex items-center justify-between px-1"
+                          style={{ height: '60px', borderBottom: '1px solid #f3f4f6' }}
+                        >
+                          {/* Payment button */}
+                          <div style={{ width: '90px', textAlign: 'left' }}>
+                            {a.paid ? (
+                              <button
+                                style={{
+                                  border: '1.5px solid #22c55e',
+                                  color: '#22c55e',
+                                  borderRadius: '6px',
+                                  padding: '4px 12px',
+                                  fontSize: '12px',
+                                  background: 'transparent',
+                                  cursor: 'default',
+                                }}
+                              >
+                                שולם
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleMarkPaid(a)}
+                                style={{
+                                  border: '1.5px solid #2bafa0',
+                                  color: '#2bafa0',
+                                  borderRadius: '6px',
+                                  padding: '4px 12px',
+                                  fontSize: '12px',
+                                  background: 'transparent',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                לתשלום
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Time */}
+                          <div style={{ width: '90px', textAlign: 'center' }}>
+                            <span style={{ color: '#2bafa0', fontWeight: 600, fontSize: '13px' }}>{timeStr}</span>
+                          </div>
+
+                          {/* Treatment type */}
+                          <div className="flex-1" style={{ textAlign: 'center' }}>
+                            <span className="text-gray-600 text-sm">{a.treatmentType?.name || ''}</span>
+                          </div>
+
+                          {/* Phone */}
+                          <div style={{ width: '110px', textAlign: 'center' }}>
+                            <span className="text-gray-500 text-sm">{a.patient.phone || ''}</span>
+                          </div>
+
+                          {/* Patient name */}
+                          <div style={{ width: '120px', textAlign: 'right' }}>
+                            <Link href={`/patients/${a.patient.id}`}>
+                              <span
+                                style={{ color: '#2bafa0', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
+                              >
+                                {a.patient.firstName} {a.patient.lastName}
+                              </span>
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Quick stats */}
@@ -469,48 +601,16 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Today's appointments */}
-              <div className="bg-white rounded-xl shadow-sm p-5 mt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-bold text-sm text-gray-700">תורים להיום — {todayStr}</h2>
-                  <div className="flex items-center gap-2">
-                    <button onClick={refreshTodayAppts} className="p-1 rounded hover:bg-gray-100 transition-colors" title="רענן">
-                      <svg width="14" height="14" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 9A8 8 0 006.5 5.5L4 9m16 6l-2.5 3.5A8 8 0 013.9 15" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
-                    <Link href="/calendar">
-                      <button className="text-xs px-3 py-1.5 rounded-lg border transition-colors" style={{ color: '#2bafa0', borderColor: '#2bafa0' }}>
-                        לפתיחת יומן
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-                {todayAppts === null ? (
-                  <div className="py-6 text-center text-gray-400 text-sm">טוען...</div>
-                ) : todayAppts.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <div className="text-gray-300 text-4xl mb-2">📅</div>
-                    <p className="text-gray-400 text-sm">לא נקבעו תורים להיום</p>
-                    <Link href="/calendar">
-                      <button className="mt-3 text-sm px-4 py-2 rounded-lg text-white" style={{ backgroundColor: '#2bafa0' }}>קבע תור חדש</button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {todayAppts.map(a => {
-                      const s = new Date(a.startTime)
-                      const e = new Date(a.endTime)
-                      const fmt = (d:Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-                      return (
-                        <Link key={a.id} href="/calendar">
-                          <div className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-50" style={{border:'1px solid #e5e7eb'}}>
-                            <span className="text-xs text-gray-500">{fmt(s)}–{fmt(e)}</span>
-                            <span className="text-sm font-medium text-gray-700">{a.patient.firstName} {a.patient.lastName}</span>
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
+              {/* פעולות נפוצות single button */}
+              <div className="mt-4 flex justify-end">
+                <Link href="/calendar">
+                  <button
+                    className="text-sm px-5 py-2.5 rounded-lg font-medium transition-colors hover:bg-teal-50"
+                    style={{ border: '1.5px solid #2bafa0', color: '#2bafa0', background: 'transparent' }}
+                  >
+                    פעולות נפוצות
+                  </button>
+                </Link>
               </div>
             </div>
 
