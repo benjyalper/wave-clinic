@@ -12,7 +12,7 @@ interface Patient {
 
 interface Appointment {
   id: number; startTime: string; endTime: string; paid: boolean; status: string
-  treatmentType: { name: string; color: string } | null
+  treatmentType: { name: string; color: string; price: number } | null
   notes: string | null; price: number
 }
 
@@ -34,7 +34,7 @@ export default function PatientPage() {
   const [tab, setTab]               = useState<'treatments' | 'stock' | 'details' | 'history'>('treatments')
   const [invoiceType, setInvoiceType] = useState('חשבונית מס קבלה')
   const [generating, setGenerating] = useState(false)
-  const [receipt, setReceipt] = useState<{ apptId: number; patientName: string; date: string; amount: number; invoiceNum: number } | null>(null)
+  const [receipt, setReceipt] = useState<{ apptId: number; patientName: string; date: string; amount: number; invoiceNum: number; patientId: number } | null>(null)
 
   const fetchAppts = useCallback(() => {
     if (!id || !token) return
@@ -63,16 +63,25 @@ export default function PatientPage() {
       apptId: appt.id,
       patientName: patient ? `${patient.firstName} ${patient.lastName}` : '',
       date: `${d.getDate()} ב${HEBREW_MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-      amount: appt.price,
+      amount: appt.price || appt.treatmentType?.price || 0,
       invoiceNum: 2000 + appt.id,
+      patientId: patient?.id ?? 0,
     })
   }
 
+  const handleViewInvoice = async (patientId: number) => {
+    const invoices: any[] = await fetch('/api/invoices', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => [])
+    const match = invoices.filter(i => i.patientId === patientId).sort((a, b) => b.invoiceNumber - a.invoiceNumber)
+    if (match.length > 0) router.push(`/invoices/${match[0].id}`)
+    else router.push(`/invoices/new?patientId=${patientId}`)
+  }
+
   const handleMarkPaid = async (appt: Appointment) => {
+    const effectivePrice = appt.price || appt.treatmentType?.price || 0
     await fetch(`/api/appointments/${appt.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ paid: true }),
+      body: JSON.stringify({ paid: true, price: effectivePrice }),
     })
     fetchAppts()
     const d = new Date(appt.startTime)
@@ -80,8 +89,9 @@ export default function PatientPage() {
       apptId: appt.id,
       patientName: patient ? `${patient.firstName} ${patient.lastName}` : '',
       date: `${d.getDate()} ב${HEBREW_MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-      amount: appt.price,
+      amount: effectivePrice,
       invoiceNum: 2000 + appt.id,
+      patientId: patient?.id ?? 0,
     })
   }
 
@@ -411,7 +421,7 @@ export default function PatientPage() {
               <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #d1d5db', color: '#374151', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
                 תורים כלליים
               </button>
-              <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #d1d5db', color: '#374151', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
+              <button onClick={() => handleViewInvoice(receipt!.patientId)} style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #2bafa0', color: '#2bafa0', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
                 לצפייה בחשבונית מס קבלה
               </button>
             </div>

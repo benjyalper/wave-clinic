@@ -1255,7 +1255,13 @@ export default function CalendarPage() {
               <button style={{padding:'8px 14px',borderRadius:'8px',border:'1.5px solid #22c55e',color:'#22c55e',backgroundColor:'white',fontSize:'13px',fontWeight:500,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>שליחה ב-WhatsApp</button>
               <button style={{padding:'8px 14px',borderRadius:'8px',border:'1.5px solid #ef4444',color:'#ef4444',backgroundColor:'white',fontSize:'13px',fontWeight:500,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>ביטול והפקת זיכוי</button>
               <button style={{padding:'8px 14px',borderRadius:'8px',border:'1.5px solid #d1d5db',color:'#374151',backgroundColor:'white',fontSize:'13px',fontWeight:500,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>תורים כלליים</button>
-              <button style={{padding:'8px 14px',borderRadius:'8px',border:'1.5px solid #d1d5db',color:'#374151',backgroundColor:'white',fontSize:'13px',fontWeight:500,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>לצפייה בחשבונית מס קבלה</button>
+              <button onClick={async()=>{
+                  const token=localStorage.getItem('wave_token')
+                  const invs:any[]=await fetch('/api/invoices',{headers:{Authorization:`Bearer ${token}`}}).then(r=>r.json()).catch(()=>[])
+                  const match=invs.filter(i=>i.patientId===receipt!.patientId).sort((a,b)=>b.invoiceNumber-a.invoiceNumber)
+                  if(match.length>0) router.push(`/invoices/${match[0].id}`)
+                  else router.push(`/invoices/new?patientId=${receipt!.patientId}`)
+                }} style={{padding:'8px 14px',borderRadius:'8px',border:'1.5px solid #2bafa0',color:'#2bafa0',backgroundColor:'white',fontSize:'13px',fontWeight:500,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>לצפייה בחשבונית מס קבלה</button>
             </div>
             <button onClick={()=>{setReceipt(null); router.push(`/patients/${receipt.patientId}`)}}
               style={{display:'block',width:'100%',padding:'13px',borderRadius:'8px',border:'none',backgroundColor:'#e5e7eb',color:'#374151',fontSize:'15px',fontWeight:600,cursor:'pointer',marginBottom:'8px',fontFamily:"'Rubik',sans-serif"}}>

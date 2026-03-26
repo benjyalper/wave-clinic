@@ -18,7 +18,7 @@ interface AppointmentRecord {
   status: string
   notes: string
   patient: { id: number; firstName: string; lastName: string; phone: string }
-  treatmentType: { id: number; name: string; color: string; duration: number } | null
+  treatmentType: { id: number; name: string; color: string; duration: number; price: number } | null
 }
 
 function fmt(d: Date) {
@@ -103,10 +103,11 @@ export default function DoctorDiary() {
 
   async function handleMarkPaid(r: AppointmentRecord) {
     const token = localStorage.getItem('wave_token')
+    const effectivePrice = r.price || r.treatmentType?.price || 0
     await fetch(`/api/appointments/${r.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ paid: true }),
+      body: JSON.stringify({ paid: true, price: effectivePrice }),
     })
     setRecords(prev => prev.map(x => x.id === r.id ? { ...x, paid: true } : x))
     const d = new Date(r.startTime)
@@ -412,7 +413,13 @@ export default function DoctorDiary() {
               <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #d1d5db', color: '#374151', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
                 תורים כלליים
               </button>
-              <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #d1d5db', color: '#374151', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
+              <button onClick={async () => {
+                  const token = localStorage.getItem('wave_token')
+                  const invs: any[] = await fetch('/api/invoices', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => [])
+                  const match = invs.filter(i => i.patientId === receipt!.patientId).sort((a: any, b: any) => b.invoiceNumber - a.invoiceNumber)
+                  if (match.length > 0) router.push(`/invoices/${match[0].id}`)
+                  else router.push(`/invoices/new?patientId=${receipt!.patientId}`)
+                }} style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #2bafa0', color: '#2bafa0', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
                 לצפייה בחשבונית מס קבלה
               </button>
             </div>
