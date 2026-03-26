@@ -410,7 +410,7 @@ export default function Dashboard() {
             <div className="flex-1 min-w-0">
               {/* Business name title */}
               {businessName && (
-                <div style={{ textAlign: 'right', fontWeight: 700, fontSize: '18px', color: '#1f2937', marginBottom: '8px' }}>
+                <div style={{ textAlign: 'right', fontWeight: 700, fontSize: '20px', color: '#2bafa0', marginBottom: '10px' }}>
                   {businessName}
                 </div>
               )}
@@ -439,178 +439,67 @@ export default function Dashboard() {
               </div>
 
               {/* Today's appointments table */}
-              <div className="bg-white rounded-xl shadow-sm p-5">
-                {/* Table header row */}
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white rounded-xl shadow-sm" style={{ overflow: 'hidden' }}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <div className="flex items-center gap-2">
-                    {/* Print icon (no-op) */}
-                    <button className="p-1 rounded hover:bg-gray-100 transition-colors" title="הדפסה">
-                      <svg width="16" height="16" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M6 9V2h12v7" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <rect x="6" y="14" width="12" height="8" rx="1" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                    <button className="p-1 rounded hover:bg-gray-100" title="הדפסה">
+                      <svg width="15" height="15" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" strokeLinecap="round" strokeLinejoin="round"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
                     </button>
-                    {/* Export icon (no-op) */}
-                    <button className="p-1 rounded hover:bg-gray-100 transition-colors" title="ייצוא">
-                      <svg width="16" height="16" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/>
-                        <polyline points="7 10 12 15 17 10" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="12" y1="15" x2="12" y2="3" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                    <button className="p-1 rounded hover:bg-gray-100" title="ייצוא">
+                      <svg width="15" height="15" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" strokeLinecap="round" strokeLinejoin="round"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-sm text-gray-700">מטופלים להיום</h2>
-                    <button onClick={refreshTodayAppts} className="p-1 rounded hover:bg-gray-100 transition-colors" title="רענן">
-                      <svg width="14" height="14" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M20 9A8 8 0 006.5 5.5L4 9m16 6l-2.5 3.5A8 8 0 013.9 15" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                    <span className="font-bold text-sm text-gray-700">מטופלים להיום</span>
+                    <button onClick={refreshTodayAppts} className="p-1 rounded hover:bg-gray-100" title="רענן">
+                      <svg width="14" height="14" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 9A8 8 0 006.5 5.5L4 9m16 6l-2.5 3.5A8 8 0 013.9 15" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                   </div>
                 </div>
 
                 {todayAppts === null ? (
-                  <div className="py-6 text-center text-gray-400 text-sm">טוען...</div>
+                  <div className="py-8 text-center text-gray-400 text-sm">טוען...</div>
                 ) : todayAppts.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <div className="text-gray-300 text-4xl mb-2">📅</div>
-                    <p className="text-gray-400 text-sm">לא נקבעו תורים להיום</p>
-                    <Link href="/calendar">
-                      <button className="mt-3 text-sm px-4 py-2 rounded-lg text-white" style={{ backgroundColor: '#2bafa0' }}>קבע תור חדש</button>
-                    </Link>
+                  <div className="py-10 text-center">
+                    <p className="text-gray-400 text-sm mb-3">לא נקבעו תורים להיום</p>
+                    <Link href="/calendar"><button className="text-sm px-4 py-2 rounded-lg text-white" style={{ backgroundColor: '#2bafa0' }}>קבע תור חדש</button></Link>
                   </div>
                 ) : (
-                  <div>
-                    {/* Column headers */}
-                    <div className="flex items-center justify-between px-1 pb-2" style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <div style={{ width: '90px', textAlign: 'left' }}>
-                        <span className="text-xs text-gray-400">תשלום</span>
-                      </div>
-                      <div style={{ width: '90px', textAlign: 'center' }}>
-                        <span className="text-xs text-gray-400">שעה</span>
-                      </div>
-                      <div className="flex-1" style={{ textAlign: 'center' }}>
-                        <span className="text-xs text-gray-400">סוג טיפול</span>
-                      </div>
-                      <div style={{ width: '110px', textAlign: 'center' }}>
-                        <span className="text-xs text-gray-400">טלפון</span>
-                      </div>
-                      <div style={{ width: '120px', textAlign: 'right' }}>
-                        <span className="text-xs text-gray-400">שם מטופל</span>
-                      </div>
-                    </div>
-
-                    {todayAppts.map(a => {
-                      const s = new Date(a.startTime)
-                      const e = new Date(a.endTime)
-                      const fmt = (d: Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-                      const timeStr = `${fmt(s)}-${fmt(e)}`
-                      return (
-                        <div
-                          key={a.id}
-                          className="flex items-center justify-between px-1"
-                          style={{ height: '60px', borderBottom: '1px solid #f3f4f6' }}
-                        >
-                          {/* Payment button */}
-                          <div style={{ width: '90px', textAlign: 'left' }}>
-                            {a.paid ? (
-                              <button
-                                style={{
-                                  border: '1.5px solid #22c55e',
-                                  color: '#22c55e',
-                                  borderRadius: '6px',
-                                  padding: '4px 12px',
-                                  fontSize: '12px',
-                                  background: 'transparent',
-                                  cursor: 'default',
-                                }}
-                              >
-                                שולם
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleMarkPaid(a)}
-                                style={{
-                                  border: '1.5px solid #2bafa0',
-                                  color: '#2bafa0',
-                                  borderRadius: '6px',
-                                  padding: '4px 12px',
-                                  fontSize: '12px',
-                                  background: 'transparent',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                לתשלום
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Time */}
-                          <div style={{ width: '90px', textAlign: 'center' }}>
-                            <span style={{ color: '#2bafa0', fontWeight: 600, fontSize: '13px' }}>{timeStr}</span>
-                          </div>
-
-                          {/* Treatment type */}
-                          <div className="flex-1" style={{ textAlign: 'center' }}>
-                            <span className="text-gray-600 text-sm">{a.treatmentType?.name || ''}</span>
-                          </div>
-
-                          {/* Phone */}
-                          <div style={{ width: '110px', textAlign: 'center' }}>
-                            <span className="text-gray-500 text-sm">{a.patient.phone || ''}</span>
-                          </div>
-
-                          {/* Patient name */}
-                          <div style={{ width: '120px', textAlign: 'right' }}>
-                            <Link href={`/patients/${a.patient.id}`}>
-                              <span
-                                style={{ color: '#2bafa0', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}
-                              >
-                                {a.patient.firstName} {a.patient.lastName}
-                              </span>
-                            </Link>
-                          </div>
+                  todayAppts.map((a, idx) => {
+                    const s = new Date(a.startTime), e = new Date(a.endTime)
+                    const fmt = (d: Date) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+                    return (
+                      <div key={a.id} className="flex items-center px-5" style={{ height: '58px', borderBottom: idx < todayAppts.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                        {/* Patient name — rightmost */}
+                        <Link href={`/patients/${a.patient.id}`} className="flex-shrink-0" style={{ minWidth: 110 }}>
+                          <span style={{ color: '#2bafa0', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>{a.patient.firstName} {a.patient.lastName}</span>
+                        </Link>
+                        {/* Phone */}
+                        <span className="text-gray-500 text-sm flex-shrink-0 mx-3" style={{ minWidth: 100 }}>{a.patient.phone || ''}</span>
+                        {/* Treatment type */}
+                        <span className="text-gray-600 text-sm flex-1 truncate text-center">{a.treatmentType?.name || ''}</span>
+                        {/* Time */}
+                        <span style={{ color: '#2bafa0', fontWeight: 600, fontSize: '13px', flexShrink: 0, marginInlineStart: 12, minWidth: 100, textAlign: 'center' }}>{fmt(s)}–{fmt(e)}</span>
+                        {/* Pay button */}
+                        <div className="flex-shrink-0" style={{ marginInlineStart: 12 }}>
+                          {a.paid ? (
+                            <span style={{ border: '1.5px solid #22c55e', color: '#22c55e', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 600 }}>שולם</span>
+                          ) : (
+                            <button onClick={() => handleMarkPaid(a)} style={{ border: '1.5px solid #2bafa0', color: '#2bafa0', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 600, background: 'transparent', cursor: 'pointer' }}>לתשלום</button>
+                          )}
                         </div>
-                      )
-                    })}
-                  </div>
+                      </div>
+                    )
+                  })
                 )}
-              </div>
 
-              {/* Quick stats */}
-              <div className="grid grid-cols-3 gap-3 mt-4">
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: '#2bafa0' }}>
-                    {weekCount === null ? '–' : weekCount}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">תורים השבוע</div>
+                {/* Footer: פעולות נפוצות */}
+                <div className="flex justify-end px-5 py-3" style={{ borderTop: '1px solid #f3f4f6' }}>
+                  <Link href="/calendar">
+                    <button className="text-sm px-5 py-2 rounded-lg font-medium hover:bg-teal-50 transition-colors" style={{ border: '1.5px solid #2bafa0', color: '#2bafa0', background: 'transparent' }}>פעולות נפוצות</button>
+                  </Link>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <div className="text-2xl font-bold" style={{ color: '#27ae60' }}>
-                    {activePatients === null ? '–' : activePatients}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">מטופלים פעילים</div>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-400">
-                    {monthRevenue === null ? '–' : `₪${monthRevenue.toLocaleString()}`}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">הכנסות סה״כ</div>
-                </div>
-              </div>
-
-              {/* פעולות נפוצות single button */}
-              <div className="mt-4 flex justify-end">
-                <Link href="/calendar">
-                  <button
-                    className="text-sm px-5 py-2.5 rounded-lg font-medium transition-colors hover:bg-teal-50"
-                    style={{ border: '1.5px solid #2bafa0', color: '#2bafa0', background: 'transparent' }}
-                  >
-                    פעולות נפוצות
-                  </button>
-                </Link>
               </div>
             </div>
 
