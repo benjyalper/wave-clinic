@@ -491,11 +491,26 @@ export default function CalendarPage() {
   }
   const closeModal=()=>setModal(m=>({...m,open:false}))
 
-  const handleSelectPatient=(p:Patient)=>{
+  const handleSelectPatient=async(p:Patient)=>{
     setSelectedPatient(p)
     setPatientSearch(`${p.firstName} ${p.lastName}`)
     setNewPhone(p.phone)
     setShowPatientDropdown(false)
+    // Pre-fill treatment type from patient's most recent appointment
+    try{
+      const token=localStorage.getItem('wave_token')
+      const res=await fetch(`/api/appointments?patientId=${p.id}`,{headers:{Authorization:`Bearer ${token}`}})
+      if(res.ok){
+        const appts:Appointment[]=await res.json()
+        const last=[...appts].filter(a=>a.status!=='cancelled'&&a.treatmentType).sort((a,b)=>new Date(b.startTime).getTime()-new Date(a.startTime).getTime())[0]
+        if(last?.treatmentType){
+          const ttId=String(last.treatmentType.id)
+          setSelectedTreatmentTypeId(ttId)
+          const tt=treatmentTypes.find(t=>t.id===last.treatmentType!.id)
+          if(tt) setModal(m=>({...m,endTime:addMinutes(m.startTime,tt.duration)}))
+        }
+      }
+    }catch{}
   }
 
   const handleTreatmentTypeChange=(id:string)=>{
