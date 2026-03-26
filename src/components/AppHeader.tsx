@@ -405,69 +405,59 @@ export default function AppHeader() {
               ⋮
             </button>
             {mobileDotsOpen && (
-              <div style={{ position:'absolute', top:'100%', left:0, zIndex:200, display:'flex', gap:0, direction:'rtl' }}>
-                {/* Main menu */}
-                <div style={{ backgroundColor:'white', borderRadius:'12px', boxShadow:'0 8px 32px rgba(0,0,0,0.18)', minWidth:'180px', paddingTop:'6px', paddingBottom:'6px', border:'1px solid #f0f0f0' }}>
-                  {[
-                    { icon:'📅+', label:'קביעה מהירה', href:'/calendar' },
-                    { icon:'👤', label:'לידים', href:null },
-                    { icon:'✕', label:'מחיקת תורים מרובים', href:null },
-                    { icon:'⚙️', label:'הגדרות', href:'/settings/user' },
-                  ].map(item => (
-                    item.href ? (
-                      <Link key={item.label} href={item.href}>
-                        <div className="flex items-center justify-end gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
-                          onClick={() => setMobileDotsOpen(false)}>
-                          <span className="font-medium">{item.label}</span>
-                          <span className="w-5 text-center text-base">{item.icon}</span>
-                        </div>
-                      </Link>
-                    ) : (
-                      <div key={item.label} className="flex items-center justify-end gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
-                        onClick={() => { setMobileDotsOpen(false) }}>
-                        <span className="font-medium">{item.label}</span>
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, zIndex: 200,
+                backgroundColor: 'white', borderRadius: '12px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                minWidth: '200px', maxWidth: 'calc(100vw - 16px)',
+                paddingTop: '6px', paddingBottom: '6px',
+                border: '1px solid #f0f0f0', direction: 'rtl',
+                maxHeight: '80vh', overflowY: 'auto',
+              }}>
+                {[
+                  { icon: '📅', label: 'קביעה מהירה', href: '/calendar' },
+                  { icon: '👤', label: 'לידים', href: null },
+                  { icon: '✕', label: 'מחיקת תורים מרובים', href: null },
+                  { icon: '⚙️', label: 'הגדרות', href: '/settings/user' },
+                ].map(item => (
+                  item.href ? (
+                    <Link key={item.label} href={item.href}>
+                      <div className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
+                        onClick={() => setMobileDotsOpen(false)}>
                         <span className="w-5 text-center text-base">{item.icon}</span>
+                        <span className="font-medium">{item.label}</span>
                       </div>
-                    )
-                  ))}
-                  {/* דוחות with flyout */}
-                  <div
-                    className="flex items-center justify-end gap-3 px-4 py-3 cursor-pointer text-sm"
-                    style={{ backgroundColor: mobileReportsOpen ? '#f0fdf4' : 'white', color:'#374151' }}
-                    onClick={() => setMobileReportsOpen(v => !v)}
-                  >
-                    <span className="font-medium">דוחות</span>
-                    <span className="w-5 text-center text-base">📊</span>
-                  </div>
-                  <hr style={{ margin:'4px 12px', border:'none', borderTop:'1px solid #f3f4f6' }} />
-                  {[
-                    { label:'תמיכה', href:null },
-                    { label:'מדריך שימוש', href:null },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-center justify-end gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
+                    </Link>
+                  ) : (
+                    <div key={item.label} className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
                       onClick={() => setMobileDotsOpen(false)}>
+                      <span className="w-5 text-center text-base">{item.icon}</span>
                       <span className="font-medium">{item.label}</span>
                     </div>
-                  ))}
-                  <div className="flex items-center justify-end gap-3 px-4 py-3 cursor-pointer text-sm"
-                    style={{ color:'#ef4444' }}
-                    onClick={() => { setMobileDotsOpen(false); handleLogout() }}>
-                    <span className="font-medium">ניתוק</span>
-                  </div>
-                </div>
+                  )
+                ))}
 
-                {/* Reports flyout (appears to the right of main menu in LTR, but since we're in RTL visual it appears on left) */}
+                {/* דוחות — expands inline */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer text-sm"
+                  style={{ backgroundColor: mobileReportsOpen ? '#f0fdf4' : 'white', color: '#374151' }}
+                  onClick={() => setMobileReportsOpen(v => !v)}
+                >
+                  <span className="w-5 text-center text-base">📊</span>
+                  <span className="font-medium">דוחות</span>
+                  <span className="mr-auto text-xs text-gray-400">{mobileReportsOpen ? '▲' : '▼'}</span>
+                </div>
                 {mobileReportsOpen && (
-                  <div style={{ backgroundColor:'white', borderRadius:'12px', boxShadow:'0 8px 32px rgba(0,0,0,0.18)', minWidth:'160px', paddingTop:'6px', paddingBottom:'6px', border:'1px solid #f0f0f0', marginLeft:'4px', maxHeight:'70vh', overflowY:'auto' }}>
+                  <div style={{ backgroundColor: '#f9fafb', borderTop: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
                     {REPORTS_ITEMS.map(item => (
                       item.href === '#' ? (
-                        <div key={item.label} className="px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm text-right"
+                        <div key={item.label} className="px-8 py-2.5 text-gray-600 hover:bg-gray-100 active:bg-gray-200 cursor-pointer text-sm text-right"
                           onClick={() => { setMobileDotsOpen(false); setMobileReportsOpen(false) }}>
                           {item.label}
                         </div>
                       ) : (
                         <Link key={item.label} href={item.href}>
-                          <div className="px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm text-right"
+                          <div className="px-8 py-2.5 text-gray-600 hover:bg-gray-100 active:bg-gray-200 cursor-pointer text-sm text-right"
                             onClick={() => { setMobileDotsOpen(false); setMobileReportsOpen(false) }}>
                             {item.label}
                           </div>
@@ -476,6 +466,22 @@ export default function AppHeader() {
                     ))}
                   </div>
                 )}
+
+                <hr style={{ margin: '4px 12px', border: 'none', borderTop: '1px solid #f3f4f6' }} />
+                {[
+                  { label: 'תמיכה' },
+                  { label: 'מדריך שימוש' },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 active:bg-gray-100 cursor-pointer text-sm"
+                    onClick={() => setMobileDotsOpen(false)}>
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 px-4 py-3 cursor-pointer text-sm"
+                  style={{ color: '#ef4444' }}
+                  onClick={() => { setMobileDotsOpen(false); handleLogout() }}>
+                  <span className="font-medium">ניתוק</span>
+                </div>
               </div>
             )}
           </div>
@@ -519,8 +525,8 @@ export default function AppHeader() {
       <div
         className="fixed top-0 right-0 h-full z-50 md:hidden bg-white shadow-xl transition-transform duration-300"
         style={{
-          width: '70%',
-          maxWidth: '320px',
+          width: '82%',
+          maxWidth: '340px',
           transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(100%)',
           direction: 'rtl',
         }}
@@ -548,8 +554,8 @@ export default function AppHeader() {
                 style={{ fontSize: '16px' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <span className="text-xl">{item.icon}</span>
-                <span className="font-medium">{item.label}</span>
+                <span className="text-xl flex-shrink-0">{item.icon}</span>
+                <span className="font-medium truncate">{item.label}</span>
               </div>
             </Link>
           ))}

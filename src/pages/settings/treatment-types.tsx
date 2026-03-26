@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import AppHeader from '../../components/AppHeader'
 
@@ -16,37 +16,60 @@ interface TreatmentType {
   color: string
 }
 
-const DEMO_ROWS: TreatmentType[] = [
-  { id: 1, name: 'סוג טיפול לדוגמא', duration: 60, price: 150, color: '#3b82f6' },
-  { id: 2, name: 'טיפול לדוגמא ב', duration: 45, price: 120, color: '#22c55e' },
-  { id: 3, name: 'טיפול לדוגמא ג', duration: 30, price: 90, color: '#ec4899' },
-  { id: 4, name: 'טיפול לדוגמא ד', duration: 90, price: 200, color: '#a855f7' },
-]
-
 export default function TreatmentTypes() {
-  const [types, setTypes] = useState<TreatmentType[]>(DEMO_ROWS)
+  const [types, setTypes] = useState<TreatmentType[]>([])
+  const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
   const [newDuration, setNewDuration] = useState<number | ''>('')
   const [newPrice, setNewPrice] = useState<number | ''>('')
   const [newColor, setNewColor] = useState('#3b82f6')
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
-  const [nextId, setNextId] = useState(100)
+  const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  function handleAdd() {
-    if (!newName.trim() || !newDuration || !newPrice) return
-    const item: TreatmentType = {
-      id: nextId,
-      name: newName.trim(),
-      duration: Number(newDuration),
-      price: Number(newPrice),
-      color: newColor,
+  function token() { return typeof window !== 'undefined' ? localStorage.getItem('wave_token') || '' : '' }
+
+  useEffect(() => {
+    fetch('/api/treatment-types', { headers: { Authorization: `Bearer ${token()}` } })
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setTypes(d) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleAdd() {
+    if (!newName.trim() || !newDuration || newPrice === '') return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/treatment-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ name: newName.trim(), duration: Number(newDuration), price: Number(newPrice), color: newColor }),
+      })
+      if (res.ok) {
+        const created = await res.json()
+        setTypes(prev => [...prev, created])
+        setNewName('')
+        setNewDuration('')
+        setNewPrice('')
+        setNewColor('#3b82f6')
+      }
+    } finally {
+      setSaving(false)
     }
-    setTypes(prev => [...prev, item])
-    setNextId(n => n + 1)
-    setNewName('')
-    setNewDuration('')
-    setNewPrice('')
-    setNewColor('#3b82f6')
+  }
+
+  async function handleDelete(id: number) {
+    setDeletingId(id)
+    try {
+      await fetch(`/api/treatment-types/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token()}` },
+      })
+      setTypes(prev => prev.filter(t => t.id !== id))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -155,18 +178,19 @@ export default function TreatmentTypes() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px' }}>
               <button
                 onClick={handleAdd}
+                disabled={saving || !newName.trim() || !newDuration || newPrice === ''}
                 style={{
-                  backgroundColor: '#9ca3af',
+                  backgroundColor: saving || !newName.trim() || !newDuration || newPrice === '' ? '#9ca3af' : '#2bafa0',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
                   padding: '8px 24px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  cursor: 'pointer',
+                  cursor: saving ? 'default' : 'pointer',
                 }}
               >
-                הוספה
+                {saving ? 'שומר...' : 'הוספה'}
               </button>
             </div>
           </div>
@@ -176,16 +200,23 @@ export default function TreatmentTypes() {
             <table style={{ width: '100%', borderCollapse: 'collapse', direction: 'rtl' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  {['סוג', 'זמן', 'מחיר', 'צבע'].map(col => (
+                  {['סוג', 'זמן', 'מחיר', 'צבע', ''].map(col => (
                     <th key={col} style={thStyle}>{col}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {types.length === 0 && (
+                {loading && (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#9ca3af', fontSize: '14px' }}>
-                      אין סוגי טיפולים
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#9ca3af', fontSize: '14px' }}>
+                      טוען...
+                    </td>
+                  </tr>
+                )}
+                {!loading && types.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#9ca3af', fontSize: '14px' }}>
+                      אין סוגי טיפולים — הוסף את הראשון למעלה
                     </td>
                   </tr>
                 )}
@@ -212,6 +243,22 @@ export default function TreatmentTypes() {
                           border: '2px solid rgba(0,0,0,0.1)',
                         }}
                       />
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        disabled={deletingId === t.id}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: deletingId === t.id ? 'default' : 'pointer',
+                          color: '#ef4444',
+                          fontSize: '13px',
+                          padding: '2px 8px',
+                        }}
+                      >
+                        {deletingId === t.id ? '...' : 'מחיקה'}
+                      </button>
                     </td>
                   </tr>
                 ))}

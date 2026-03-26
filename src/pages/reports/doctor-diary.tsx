@@ -65,6 +65,7 @@ export default function DoctorDiary() {
   const [generated, setGenerated] = useState(false)
   const [rangeLabel, setRangeLabel] = useState('')
   const [patientName, setPatientName] = useState('')
+  const [receipt, setReceipt] = useState<{ patientName: string; date: string; amount: number; invoiceNum: number; patientId: number } | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('wave_logged_in') !== 'true') {
@@ -99,6 +100,24 @@ export default function DoctorDiary() {
       .catch(()=>{})
       .finally(()=>setLoading(false))
   }, [router.isReady]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleMarkPaid(r: AppointmentRecord) {
+    const token = localStorage.getItem('wave_token')
+    await fetch(`/api/appointments/${r.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ paid: true }),
+    })
+    setRecords(prev => prev.map(x => x.id === r.id ? { ...x, paid: true } : x))
+    const d = new Date(r.startTime)
+    setReceipt({
+      patientName: `${r.patient.firstName} ${r.patient.lastName}`,
+      date: `${d.getDate()} ב${HEBREW_MONTHS[d.getMonth()]} ${d.getFullYear()}`,
+      amount: r.price,
+      invoiceNum: 2000 + r.id,
+      patientId: r.patient.id,
+    })
+  }
 
   function applyQuickFilter(f: string) {
     setActiveFilter(f)
@@ -344,7 +363,7 @@ export default function DoctorDiary() {
                       <td style={tdStyle}>
                         {r.paid
                           ? <span style={{ color: '#16a34a', fontWeight: 600 }}>שולם</span>
-                          : <span style={{ color: '#dc2626', fontWeight: 600 }}>לא שולם</span>
+                          : <button onClick={() => handleMarkPaid(r)} style={{ background: 'none', border: '1.5px solid #dc2626', borderRadius: '6px', color: '#dc2626', fontWeight: 600, fontSize: '13px', padding: '3px 10px', cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>לא שולם</button>
                         }
                       </td>
                       <td style={tdIconStyle} className="no-print" />
@@ -357,6 +376,59 @@ export default function DoctorDiary() {
           </div>
         </main>
       </div>
+
+      {/* ── Receipt / Payment Confirmation Modal ── */}
+      {receipt && (
+        <div
+          style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          onClick={() => setReceipt(null)}
+        >
+          <div
+            dir="rtl"
+            style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '540px', padding: '28px 24px', fontFamily: "'Rubik', sans-serif", boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '18px 20px', marginBottom: '20px', textAlign: 'right' }}>
+              <div style={{ fontWeight: 700, fontSize: '16px', color: '#1f2937', marginBottom: '8px' }}>
+                אישור - חשבונית מס קבלה {receipt.invoiceNum}
+              </div>
+              <div style={{ color: '#0d9488', fontSize: '14px', lineHeight: '1.7' }}>
+                <div>שולם על ידי {receipt.patientName}</div>
+                <div>בתאריך {receipt.date}</div>
+                <div>על סה״כ {receipt.amount > 0 ? `₪${receipt.amount}` : '—'}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #22c55e', color: '#22c55e', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
+                שליחה ב-WhatsApp
+              </button>
+              <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #ef4444', color: '#ef4444', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
+                ביטול והפקת זיכוי
+              </button>
+              <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #d1d5db', color: '#374151', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
+                תורים כלליים
+              </button>
+              <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1.5px solid #d1d5db', color: '#374151', backgroundColor: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>
+                לצפייה בחשבונית מס קבלה
+              </button>
+            </div>
+
+            <button
+              onClick={() => { setReceipt(null); router.push(`/patients/${receipt.patientId}`) }}
+              style={{ display: 'block', width: '100%', padding: '13px', borderRadius: '8px', border: 'none', backgroundColor: '#e5e7eb', color: '#374151', fontSize: '15px', fontWeight: 600, cursor: 'pointer', marginBottom: '8px', fontFamily: "'Rubik', sans-serif" }}
+            >
+              לחשבון הלקוח
+            </button>
+            <button
+              onClick={() => { setReceipt(null); router.push('/dashboard') }}
+              style={{ display: 'block', width: '100%', padding: '13px', borderRadius: '8px', border: 'none', backgroundColor: '#e5e7eb', color: '#374151', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}
+            >
+              חזרה לדף הבית
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
