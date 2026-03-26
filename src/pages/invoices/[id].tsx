@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import AppHeader from '../../components/AppHeader'
@@ -53,28 +53,6 @@ export default function InvoicePage() {
   const { id } = router.query
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [error, setError] = useState('')
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const invoiceRef = useRef<HTMLDivElement>(null)
-
-  // CSS zoom scales the element AND its layout footprint (unlike transform),
-  // so no overflow clipping, no manual height calculation needed.
-  const applyScale = useCallback(() => {
-    const wrapper = wrapperRef.current
-    const inv = invoiceRef.current
-    if (!wrapper || !inv) return
-    const NATURAL_WIDTH = 912 // 800px content + 56px*2 padding
-    const available = wrapper.clientWidth
-    const scale = available < NATURAL_WIDTH ? available / NATURAL_WIDTH : 1
-    ;(inv.style as any).zoom = String(scale)
-  }, [])
-
-  useEffect(() => {
-    if (!invoice) return
-    applyScale()
-    window.addEventListener('resize', applyScale)
-    return () => window.removeEventListener('resize', applyScale)
-  }, [invoice, applyScale])
-
   useEffect(() => {
     if (!id) return
     const token = localStorage.getItem('wave_token')
@@ -101,14 +79,22 @@ export default function InvoicePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>{`
           @page { size: A4 portrait; margin: 1cm; }
+          .invoice-page {
+            width: 912px;
+            margin: 24px auto;
+          }
+          /* Scale invoice to fit narrow screens using CSS zoom (affects layout too) */
+          @media (max-width: 911px) {
+            .invoice-wrap { overflow-x: hidden; }
+            .invoice-page { zoom: calc(100vw / 912); margin: 0; }
+          }
           @media print {
             .no-print { display: none !important; }
             body { margin: 0 !important; background: white !important; }
-            .invoice-scaler { height: auto !important; overflow: visible !important; }
             .invoice-page {
+              zoom: 1 !important;
               box-shadow: none !important;
               margin: 0 auto !important;
-              zoom: 1 !important;
               width: 100% !important;
               padding: 24px 32px !important;
             }
@@ -155,21 +141,18 @@ export default function InvoicePage() {
         )}
       </div>
 
-      {/* Invoice document — zoom scales element + layout footprint together on mobile */}
-      <div ref={wrapperRef} className="invoice-scaler">
+      <div className="invoice-wrap">
       <div
-        ref={invoiceRef}
         className="invoice-page"
         dir="rtl"
         style={{
-          width: 800,
-          margin: '24px auto',
           background: 'white',
           padding: '48px 56px',
           boxShadow: '0 2px 20px rgba(0,0,0,0.1)',
           fontSize: 13,
           lineHeight: 1.6,
           color: '#111',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header */}
