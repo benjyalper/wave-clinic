@@ -1044,11 +1044,15 @@ export default function CalendarPage() {
                 {/* action buttons – wrap naturally on small screens */}
                 <button onClick={()=>{closeEditModal();router.push(`/patients/${editModal.appt!.patient.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>לחשבון הלקוח</button>
-                <button onClick={()=>{
-                    const a=editModal.appt!
-                    setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:'',qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
-                  }}
-                  style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap',touchAction:'manipulation'}}>לתשלום</button>
+                {editModal.appt?.paid ? (
+                  <span style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #22c55e',backgroundColor:'#f0fdf4',color:'#16a34a',fontWeight:600,whiteSpace:'nowrap'}}>✓ שולם</span>
+                ) : (
+                  <button onClick={()=>{
+                      const a=editModal.appt!
+                      setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:'',qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
+                    }}
+                    style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap',touchAction:'manipulation'}}>לתשלום</button>
+                )}
                 <button onClick={()=>{closeEditModal();router.push(`/reports/doctor-diary?patientId=${editModal.appt!.patient.id}`)}}
                   style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #6b7280',backgroundColor:'white',color:'#6b7280',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>ליומן הרופא</button>
               </div>
