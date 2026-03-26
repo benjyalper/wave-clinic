@@ -105,12 +105,22 @@ export default function InvoicePage() {
     <>
       <Head>
         <title>חשבונית #{invoice.invoiceNumber}</title>
+        {/* Override viewport to match invoice width so Safari PDF is full-size */}
+        <meta name="viewport" content="width=912, initial-scale=1" />
         <style>{`
+          @page { size: A4 portrait; margin: 1cm; }
           @media print {
             .no-print { display: none !important; }
-            body { margin: 0; }
-            .invoice-page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; transform: none !important; transform-origin: unset !important; }
+            body { margin: 0 !important; background: white !important; }
             .invoice-scaler { height: auto !important; overflow: visible !important; }
+            .invoice-page {
+              box-shadow: none !important;
+              margin: 0 auto !important;
+              transform: none !important;
+              transform-origin: unset !important;
+              width: 100% !important;
+              padding: 24px 32px !important;
+            }
           }
           body { background: #f0f2f5; font-family: 'Arial', 'Helvetica', sans-serif; }
         `}</style>
