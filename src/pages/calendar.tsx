@@ -474,13 +474,12 @@ export default function CalendarPage() {
     return()=>clearTimeout(t)
   },[patientSearch])
 
-  // load treatment types
+  // load treatment types on mount so dropdowns are always populated
   useEffect(()=>{
-    if(!modal.open&&!editModal.open) return
     const token=localStorage.getItem('wave_token'); if(!token) return
     fetch('/api/treatment-types',{headers:{Authorization:`Bearer ${token}`}})
       .then(r=>r.json()).then(d=>{if(Array.isArray(d))setTreatmentTypes(d)}).catch(()=>{})
-  },[modal.open, editModal.open])
+  },[])
 
   // ── open new appointment modal ──
   const openModal=(date:string, startTime:string)=>{
