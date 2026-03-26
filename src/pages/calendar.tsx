@@ -369,7 +369,7 @@ export default function CalendarPage() {
     setPayModal({
       open:true, appt,
       toName:`${appt.patient.firstName} ${appt.patient.lastName}`,
-      items:[{treatmentTypeId:appt.treatmentType?String(appt.treatmentType.id):'', freeText:'', qty:1, price:0, priceText:''}],
+      items:[{treatmentTypeId:appt.treatmentType?String(appt.treatmentType.id):'', freeText:undefined as any, qty:1, price:0, priceText:''}],
       payMethod:'מזומן', payMethod2:'ללא', notes:'', saving:false,
     })
   }
@@ -1055,7 +1055,7 @@ export default function CalendarPage() {
                 ) : (
                   <button onClick={()=>{
                       const a=editModal.appt!
-                      setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:'',qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
+                      setPayModal({open:true,appt:a,toName:`${a.patient.firstName} ${a.patient.lastName}`,items:[{treatmentTypeId:a.treatmentType?String(a.treatmentType.id):'',freeText:undefined as any,qty:1,price:0,priceText:''}],payMethod:'מזומן',payMethod2:'ללא',notes:'',saving:false})
                     }}
                     style={{padding:'5px 10px',borderRadius:'7px',fontSize:'11px',border:'1.5px solid #2bafa0',backgroundColor:'white',color:'#2bafa0',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap',touchAction:'manipulation'}}>לתשלום</button>
                 )}
@@ -1156,7 +1156,11 @@ export default function CalendarPage() {
                     ?<input value={it.freeText} onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,freeText:e.target.value}:x)}))}
                         placeholder="תיאור חופשי" style={{...inputStyle,fontSize:'13px',padding:'6px 8px'}}/>
                     :<select value={it.treatmentTypeId}
-                        onChange={e=>setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,treatmentTypeId:e.target.value}:x)}))}
+                        onChange={e=>{
+                          const id=e.target.value
+                          const tt=treatmentTypes.find(t=>String(t.id)===id)
+                          setPayModal(m=>({...m,items:m.items.map((x,i)=>i===idx?{...x,treatmentTypeId:id,price:tt?.price??x.price,priceText:tt?String(tt.price):x.priceText}:x)}))
+                        }}
                         style={{...inputStyle,fontSize:'13px',padding:'6px 8px',cursor:'pointer'}}>
                         <option value="">בחר סוג טיפול</option>
                         {treatmentTypes.map(tt=><option key={tt.id} value={tt.id}>{tt.name}</option>)}
