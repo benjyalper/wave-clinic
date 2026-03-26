@@ -362,7 +362,10 @@ export default function DoctorDiary() {
                       <td style={tdStyle}>{r.price > 0 ? r.price : 0}</td>
                       <td style={tdStyle}>
                         {r.paid
-                          ? <span style={{ color: '#16a34a', fontWeight: 600 }}>שולם</span>
+                          ? <button onClick={() => {
+                              const d = new Date(r.startTime)
+                              setReceipt({ patientName: `${r.patient.firstName} ${r.patient.lastName}`, date: `${d.getDate()} ב${HEBREW_MONTHS[d.getMonth()]} ${d.getFullYear()}`, amount: r.price, invoiceNum: 2000 + r.id, patientId: r.patient.id })
+                            }} style={{ background: 'none', border: '1.5px solid #22c55e', borderRadius: '6px', color: '#16a34a', fontWeight: 600, fontSize: '13px', padding: '3px 10px', cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>שולם</button>
                           : <button onClick={() => handleMarkPaid(r)} style={{ background: 'none', border: '1.5px solid #dc2626', borderRadius: '6px', color: '#dc2626', fontWeight: 600, fontSize: '13px', padding: '3px 10px', cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>לא שולם</button>
                         }
                       </td>

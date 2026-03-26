@@ -57,6 +57,17 @@ export default function PatientPage() {
     fetchAppts()
   }, [id, token, router, fetchAppts])
 
+  const openReceipt = (appt: Appointment) => {
+    const d = new Date(appt.startTime)
+    setReceipt({
+      apptId: appt.id,
+      patientName: patient ? `${patient.firstName} ${patient.lastName}` : '',
+      date: `${d.getDate()} ב${HEBREW_MONTHS[d.getMonth()]} ${d.getFullYear()}`,
+      amount: appt.price,
+      invoiceNum: 2000 + appt.id,
+    })
+  }
+
   const handleMarkPaid = async (appt: Appointment) => {
     await fetch(`/api/appointments/${appt.id}`, {
       method: 'PATCH',
@@ -268,11 +279,12 @@ export default function PatientPage() {
                           </td>
                           <td style={{ padding: '14px 20px' }}>
                             {a.paid ? (
-                              <span style={{
+                              <button onClick={() => openReceipt(a)} style={{
                                 display: 'inline-block', padding: '4px 14px',
                                 borderRadius: '6px', border: '1.5px solid #22c55e',
                                 color: '#22c55e', fontSize: '12px', fontWeight: 600,
-                              }}>שולם</span>
+                                backgroundColor: 'white', cursor: 'pointer', fontFamily: "'Rubik', sans-serif",
+                              }}>שולם</button>
                             ) : (
                               <button
                                 onClick={() => handleMarkPaid(a)}
@@ -351,7 +363,7 @@ export default function PatientPage() {
                           <td style={{ padding: '14px 20px', color: '#2bafa0', fontSize: '13px' }}>{fmtApptDate(a.startTime)}</td>
                           <td style={{ padding: '14px 20px', fontSize: '13px', color: '#374151' }}>{a.treatmentType?.name || 'טיפול'}</td>
                           <td style={{ padding: '14px 20px' }}>
-                            <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '6px', border: '1.5px solid #22c55e', color: '#22c55e', fontSize: '12px', fontWeight: 600 }}>שולם</span>
+                            <button onClick={() => openReceipt(a)} style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '6px', border: '1.5px solid #22c55e', color: '#22c55e', fontSize: '12px', fontWeight: 600, backgroundColor: 'white', cursor: 'pointer', fontFamily: "'Rubik', sans-serif" }}>שולם</button>
                           </td>
                         </tr>
                       ))}

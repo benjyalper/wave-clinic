@@ -128,11 +128,11 @@ export default function Dashboard() {
         const patientIds = new Set((data as any[]).filter(a => a.status !== 'cancelled').map((a: any) => a.patientId))
         setActivePatients(patientIds.size)
 
-        // This month revenue (paid)
+        // Revenue: sum all paid non-cancelled appointments (any date)
         const rev = (data as any[]).reduce((sum: number, a: any) => {
           if (a.status === 'cancelled' || !a.paid) return sum
-          const dt = new Date(a.startTime)
-          return dt.getFullYear() === y && dt.getMonth() === mo ? sum + (a.price || 0) : sum
+          const price = a.price || a.treatmentType?.price || 0
+          return sum + price
         }, 0)
         setMonthRevenue(rev)
       }).catch(() => { setTodayAppts([]); setWeekCount(0); setActivePatients(0); setMonthRevenue(0) })
@@ -459,7 +459,7 @@ export default function Dashboard() {
                   <div className="text-2xl font-bold text-gray-400">
                     {monthRevenue === null ? '–' : `₪${monthRevenue.toLocaleString()}`}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">הכנסות החודש</div>
+                  <div className="text-xs text-gray-500 mt-1">הכנסות סה״כ</div>
                 </div>
               </div>
 
