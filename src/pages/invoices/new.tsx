@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import AppHeader from '../../components/AppHeader'
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -134,10 +135,12 @@ export default function NewInvoicePage() {
       <Head><title>חשבונית חדשה - Wave</title></Head>
       <div dir="rtl" style={{ minHeight:'100vh', backgroundColor:'#f0f2f5', fontFamily:"'Rubik',sans-serif" }}>
 
+        <AppHeader />
+
         {/* Toolbar */}
-        <div style={{ backgroundColor:'#2c3444', padding:'10px 20px', display:'flex', gap:12, alignItems:'center', direction:'rtl' }}>
+        <div style={{ backgroundColor:'#f0f2f5', padding:'10px 20px', display:'flex', gap:12, alignItems:'center', direction:'rtl', borderBottom:'1px solid #e5e7eb' }}>
           <button onClick={() => router.back()} style={toolbarBtn}>← חזור</button>
-          <span style={{ color:'white', fontWeight:600, fontSize:16 }}>יצירת חשבונית חדשה</span>
+          <span style={{ color:'#374151', fontWeight:600, fontSize:16 }}>יצירת חשבונית חדשה</span>
         </div>
 
         <div style={{ maxWidth:760, margin:'24px auto', padding:'0 16px' }}>
@@ -411,8 +414,8 @@ const addRowBtn: React.CSSProperties = {
   fontFamily:"'Rubik',sans-serif",
 }
 const toolbarBtn: React.CSSProperties = {
-  background:'transparent', border:'1px solid rgba(255,255,255,0.4)',
-  color:'white', padding:'6px 14px', borderRadius:6, cursor:'pointer', fontSize:13,
+  background:'transparent', border:'1px solid #d1d5db',
+  color:'#374151', padding:'6px 14px', borderRadius:6, cursor:'pointer', fontSize:13,
 }
 const cancelBtn: React.CSSProperties = {
   backgroundColor:'#f3f4f6', color:'#374151', border:'none',

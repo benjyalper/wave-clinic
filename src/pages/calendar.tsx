@@ -406,11 +406,12 @@ export default function CalendarPage() {
       })
       const data=await res.json()
       if(!res.ok) throw new Error(data.error||'שגיאה')
-      // mark appointment as paid
+      // mark appointment as paid + save actual price
+      const totalPaid = payModal.items.reduce((s,i)=>s+(i.qty*i.price),0)
       await fetch(`/api/appointments/${payModal.appt!.id}`,{
         method:'PUT',
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
-        body:JSON.stringify({paid:true,paymentMethod:payModal.payMethod}),
+        body:JSON.stringify({paid:true,paymentMethod:payModal.payMethod,price:totalPaid}),
       })
       router.push(`/invoices/${data.id}`)
     }catch(e:any){

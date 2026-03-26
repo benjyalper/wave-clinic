@@ -70,7 +70,7 @@ export default function PatientPage() {
 
   const handleMarkPaid = async (appt: Appointment) => {
     await fetch(`/api/appointments/${appt.id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ paid: true }),
     })

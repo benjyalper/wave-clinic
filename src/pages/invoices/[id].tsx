@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import AppHeader from '../../components/AppHeader'
 
 interface InvoiceItem {
   description: string
@@ -86,11 +87,13 @@ export default function InvoicePage() {
         `}</style>
       </Head>
 
+      <div className="no-print"><AppHeader /></div>
+
       {/* Print / Back toolbar */}
-      <div className="no-print" style={{ background: '#2c3444', padding: '10px 20px', display: 'flex', gap: 12, alignItems: 'center', direction: 'rtl' }}>
+      <div className="no-print" style={{ background: '#f0f2f5', padding: '10px 20px', display: 'flex', gap: 12, alignItems: 'center', direction: 'rtl', borderBottom: '1px solid #e5e7eb' }}>
         <button
           onClick={() => router.back()}
-          style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}
+          style={{ background: 'transparent', border: '1px solid #d1d5db', color: '#374151', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}
         >
           ← חזור
         </button>

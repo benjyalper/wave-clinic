@@ -104,7 +104,7 @@ export default function DoctorDiary() {
   async function handleMarkPaid(r: AppointmentRecord) {
     const token = localStorage.getItem('wave_token')
     await fetch(`/api/appointments/${r.id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ paid: true }),
     })
