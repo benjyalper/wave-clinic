@@ -66,11 +66,16 @@ export default function InvoicePage() {
     if (available >= NATURAL_WIDTH) {
       inv.style.transform = ''
       inv.style.transformOrigin = ''
+      inv.style.marginLeft = ''
+      inv.style.marginRight = ''
       setWrapperHeight(undefined)
     } else {
       const scale = available / NATURAL_WIDTH
+      // Zero the auto-margins so element starts at x=0 (avoids overflow:hidden clipping)
+      inv.style.marginLeft = '0'
+      inv.style.marginRight = '0'
       inv.style.transform = `scale(${scale})`
-      inv.style.transformOrigin = 'top center'
+      inv.style.transformOrigin = 'top left'
       setWrapperHeight(Math.round(inv.scrollHeight * scale))
     }
   }, [])
@@ -105,8 +110,7 @@ export default function InvoicePage() {
     <>
       <Head>
         <title>חשבונית #{invoice.invoiceNumber}</title>
-        {/* Override viewport to match invoice width so Safari PDF is full-size */}
-        <meta name="viewport" content="width=912, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>{`
           @page { size: A4 portrait; margin: 1cm; }
           @media print {
