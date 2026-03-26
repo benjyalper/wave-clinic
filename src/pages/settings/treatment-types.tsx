@@ -26,6 +26,22 @@ export default function TreatmentTypes() {
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editPrice, setEditPrice] = useState('')
+
+  async function handleSavePrice(t: TreatmentType) {
+    const p = parseFloat(editPrice)
+    if (isNaN(p) || p < 0) return
+    await fetch(`/api/treatment-types/${t.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+      body: JSON.stringify({ name: t.name, duration: t.duration, price: p, color: t.color }),
+    })
+    setTypes(prev => prev.map(x => x.id === t.id ? { ...x, price: p } : x))
+    // Clear backfill flag so dashboard re-runs it with updated prices
+    if (typeof window !== 'undefined') localStorage.removeItem('wave_price_backfill_done')
+    setEditingId(null)
+  }
 
   function token() { return typeof window !== 'undefined' ? localStorage.getItem('wave_token') || '' : '' }
 
@@ -230,7 +246,30 @@ export default function TreatmentTypes() {
                   >
                     <td style={tdStyle}>{t.name}</td>
                     <td style={tdStyle}>{t.duration} דק'</td>
-                    <td style={tdStyle}>₪{t.price}</td>
+                    <td style={tdStyle}>
+                      {editingId === t.id ? (
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            value={editPrice}
+                            onChange={e => setEditPrice(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleSavePrice(t); if (e.key === 'Escape') setEditingId(null) }}
+                            autoFocus
+                            style={{ width: 80, border: '1px solid #2bafa0', borderRadius: 4, padding: '3px 6px', fontSize: 13 }}
+                          />
+                          <button onClick={() => handleSavePrice(t)} style={{ background: '#2bafa0', color: 'white', border: 'none', borderRadius: 4, padding: '3px 8px', cursor: 'pointer', fontSize: 12 }}>✓</button>
+                          <button onClick={() => setEditingId(null)} style={{ background: 'none', border: '1px solid #d1d5db', borderRadius: 4, padding: '3px 6px', cursor: 'pointer', fontSize: 12 }}>✕</button>
+                        </div>
+                      ) : (
+                        <span
+                          onClick={() => { setEditingId(t.id); setEditPrice(String(t.price)) }}
+                          title="לחץ לעריכת מחיר"
+                          style={{ cursor: 'pointer', borderBottom: '1px dashed #9ca3af' }}
+                        >
+                          ₪{t.price}
+                        </span>
+                      )}
+                    </td>
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <span
                         title={t.color}

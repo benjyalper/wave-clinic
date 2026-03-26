@@ -138,17 +138,13 @@ export default function Dashboard() {
       }).catch(() => { setTodayAppts([]); setWeekCount(0); setActivePatients(0); setMonthRevenue(0) })
   }
 
-  // Fetch stats once on mount; also run one-time price back-fill for legacy zero-price paid appointments
+  // On mount: back-fill zero-price paid appointments then load stats
   useEffect(() => {
     const token = localStorage.getItem('wave_token')
-    if (token && !localStorage.getItem('wave_price_backfill_done')) {
-      fetch('/api/fix-prices', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-        .then(() => { localStorage.setItem('wave_price_backfill_done', '1') })
-        .catch(() => {})
-        .finally(() => fetchStats())
-    } else {
-      fetchStats()
-    }
+    if (!token) { fetchStats(); return }
+    fetch('/api/fix-prices', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      .catch(() => {})
+      .finally(() => fetchStats())
   }, [])
 
   const refreshTodayAppts = () => fetchStats(true)
