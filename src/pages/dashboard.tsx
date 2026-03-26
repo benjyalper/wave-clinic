@@ -73,6 +73,9 @@ interface TodayAppt {
   treatmentType: { name: string; price: number } | null
 }
 
+const HEBREW_MONTHS_PAY = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+const PAY_METHODS = ['מזומן','כרטיס אשראי','העברה בנקאית',"צ'ק",'ביט','פייבוקס']
+
 export default function Dashboard() {
   const router = useRouter()
   const [userName, setUserName] = useState('J')
@@ -86,6 +89,13 @@ export default function Dashboard() {
   const [weekCount, setWeekCount] = useState<number|null>(null)
   const [activePatients, setActivePatients] = useState<number|null>(null)
   const [monthRevenue, setMonthRevenue] = useState<number|null>(null)
+  const [treatmentTypes, setTreatmentTypes] = useState<{id:number;name:string;price:number}[]>([])
+  const [payingAppt, setPayingAppt] = useState<TodayAppt|null>(null)
+  const [payPrice, setPayPrice] = useState('')
+  const [payMethod, setPayMethod] = useState('מזומן')
+  const [payNotes, setPayNotes] = useState('')
+  const [payingSaving, setPayingSaving] = useState(false)
+  const [receipt, setReceipt] = useState<{patientName:string;date:string;amount:number;invoiceNum:number;patientId:number}|null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -149,14 +159,62 @@ export default function Dashboard() {
       }).catch(() => { setTodayAppts([]); setWeekCount(0); setActivePatients(0); setMonthRevenue(0) })
   }
 
-  // On mount: back-fill zero-price paid appointments then load stats
+  // On mount: back-fill zero-price paid appointments then load stats + treatment types
   useEffect(() => {
     const token = localStorage.getItem('wave_token')
     if (!token) { fetchStats(); return }
     fetch('/api/fix-prices', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      .catch(() => {})
-      .finally(() => fetchStats())
+      .catch(() => {}).finally(() => fetchStats())
+    fetch('/api/treatment-types', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setTreatmentTypes(d) }).catch(() => {})
   }, [])
+
+  const openPayModal = (a: TodayAppt) => {
+    const initPrice = a.price || a.treatmentType?.price || 0
+    setPayingAppt(a)
+    setPayPrice(initPrice > 0 ? String(initPrice) : '')
+    setPayMethod('מזומן')
+    setPayNotes('')
+  }
+
+  const handlePay = async () => {
+    if (!payingAppt) return
+    setPayingSaving(true)
+    const token = localStorage.getItem('wave_token')
+    const totalPaid = parseFloat(payPrice) || 0
+    const d = new Date(payingAppt.startTime)
+    const dateStr = `${d.getDate()} ${HEBREW_MONTHS_PAY[d.getMonth()]} ${d.getFullYear()}`
+    try {
+      const invRes = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          patientId: payingAppt.patient.id,
+          invoiceType: 'חשבונית מס קבלה',
+          issueDate: new Date().toISOString(),
+          items: [{ description: payingAppt.treatmentType?.name || 'טיפול', date: dateStr, quantity: 1, unitPrice: totalPaid, total: totalPaid }],
+          vatRate: 17,
+          paymentMethod: payMethod,
+          paymentDate: new Date().toISOString(),
+          notes: payNotes,
+        }),
+      })
+      const invData = await invRes.json()
+      if (!invRes.ok) throw new Error(invData.error || 'שגיאה')
+      await fetch(`/api/appointments/${payingAppt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ paid: true, price: totalPaid, paymentMethod: payMethod }),
+      })
+      setTodayAppts(prev => prev ? prev.map(a => a.id === payingAppt.id ? { ...a, paid: true, price: totalPaid } : a) : prev)
+      setReceipt({ patientName: `${payingAppt.patient.firstName} ${payingAppt.patient.lastName}`, date: `${d.getDate()} ב${HEBREW_MONTHS_PAY[d.getMonth()]} ${d.getFullYear()}`, amount: totalPaid, invoiceNum: invData.invoiceNumber, patientId: payingAppt.patient.id })
+      setPayingAppt(null)
+    } catch (e: any) {
+      alert(e.message || 'שגיאה')
+    } finally {
+      setPayingSaving(false)
+    }
+  }
 
   const refreshTodayAppts = () => fetchStats(true)
 
@@ -484,9 +542,9 @@ export default function Dashboard() {
                         {/* Pay button */}
                         <div className="flex-shrink-0" style={{ marginInlineStart: 12 }}>
                           {a.paid ? (
-                            <span style={{ border: '1.5px solid #22c55e', color: '#22c55e', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 600 }}>שולם</span>
+                            <button onClick={() => { const d=new Date(a.startTime); setReceipt({patientName:`${a.patient.firstName} ${a.patient.lastName}`,date:`${d.getDate()} ב${HEBREW_MONTHS_PAY[d.getMonth()]} ${d.getFullYear()}`,amount:a.price||0,invoiceNum:2000+a.id,patientId:a.patient.id}) }} style={{ border: '1.5px solid #22c55e', color: '#22c55e', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 600, background: 'transparent', cursor: 'pointer' }}>שולם</button>
                           ) : (
-                            <button onClick={() => handleMarkPaid(a)} style={{ border: '1.5px solid #2bafa0', color: '#2bafa0', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 600, background: 'transparent', cursor: 'pointer' }}>לתשלום</button>
+                            <button onClick={() => openPayModal(a)} style={{ border: '1.5px solid #2bafa0', color: '#2bafa0', borderRadius: 6, padding: '4px 14px', fontSize: 12, fontWeight: 600, background: 'transparent', cursor: 'pointer' }}>לתשלום</button>
                           )}
                         </div>
                       </div>
@@ -506,6 +564,65 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+
+      {/* ── Payment modal ── */}
+      {payingAppt && (
+        <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.45)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setPayingAppt(null)}>
+          <div dir="rtl" style={{backgroundColor:'white',borderRadius:16,width:'100%',maxWidth:440,padding:28,fontFamily:"'Rubik',sans-serif",boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}} onClick={e=>e.stopPropagation()}>
+            <h2 style={{margin:'0 0 20px',fontSize:16,fontWeight:700,color:'#1f2937'}}>תשלום – {payingAppt.patient.firstName} {payingAppt.patient.lastName}</h2>
+            <div style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:12,color:'#6b7280',marginBottom:4}}>סוג טיפול</label>
+              <div style={{border:'1px solid #d1d5db',borderRadius:6,padding:'8px 10px',fontSize:14,color:'#374151',backgroundColor:'#f9fafb'}}>{payingAppt.treatmentType?.name || 'טיפול'}</div>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:12,color:'#6b7280',marginBottom:4}}>סכום לתשלום (₪)</label>
+              <input type="number" value={payPrice} onChange={e=>setPayPrice(e.target.value)} style={{width:'100%',border:'1px solid #d1d5db',borderRadius:6,padding:'8px 10px',fontSize:14,boxSizing:'border-box'}} />
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:12,color:'#6b7280',marginBottom:4}}>אמצעי תשלום</label>
+              <select value={payMethod} onChange={e=>setPayMethod(e.target.value)} style={{width:'100%',border:'1px solid #d1d5db',borderRadius:6,padding:'8px 10px',fontSize:14,cursor:'pointer'}}>
+                {PAY_METHODS.map(p=><option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{display:'block',fontSize:12,color:'#6b7280',marginBottom:4}}>הערות</label>
+              <textarea value={payNotes} onChange={e=>setPayNotes(e.target.value)} rows={2} style={{width:'100%',border:'1px solid #d1d5db',borderRadius:6,padding:'8px 10px',fontSize:14,resize:'vertical',boxSizing:'border-box'}} />
+            </div>
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+              <button onClick={()=>setPayingAppt(null)} style={{padding:'9px 18px',borderRadius:8,border:'1px solid #d1d5db',background:'white',color:'#374151',cursor:'pointer',fontSize:13}}>ביטול</button>
+              <button onClick={handlePay} disabled={payingSaving} style={{padding:'9px 28px',borderRadius:8,border:'none',backgroundColor:payingSaving?'#9ca3af':'#2c3444',color:'white',cursor:payingSaving?'not-allowed':'pointer',fontWeight:600,fontSize:14}}>
+                {payingSaving ? 'מייצר...' : 'הפקת מסמך'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Receipt modal ── */}
+      {receipt && (
+        <div style={{position:'fixed',inset:0,backgroundColor:'rgba(0,0,0,0.45)',zIndex:9001,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setReceipt(null)}>
+          <div dir="rtl" style={{backgroundColor:'white',borderRadius:16,width:'100%',maxWidth:540,padding:'28px 24px',fontFamily:"'Rubik',sans-serif",boxShadow:'0 20px 60px rgba(0,0,0,0.25)'}} onClick={e=>e.stopPropagation()}>
+            <div style={{backgroundColor:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:10,padding:'18px 20px',marginBottom:20,textAlign:'right'}}>
+              <div style={{fontWeight:700,fontSize:16,color:'#1f2937',marginBottom:8}}>אישור - חשבונית מס קבלה {receipt.invoiceNum}</div>
+              <div style={{color:'#0d9488',fontSize:14,lineHeight:1.7}}>
+                <div>שולם על ידי {receipt.patientName}</div>
+                <div>בתאריך {receipt.date}</div>
+                <div>על סה״כ {receipt.amount > 0 ? `₪${receipt.amount}` : '—'}</div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
+              <button onClick={async()=>{ const token=localStorage.getItem('wave_token'); const invs:any[]=await fetch('/api/invoices',{headers:{Authorization:`Bearer ${token}`}}).then(r=>r.json()).catch(()=>[]); const m=invs.filter(i=>i.patientId===receipt.patientId).sort((a:any,b:any)=>b.invoiceNumber-a.invoiceNumber); if(m.length>0) router.push(`/invoices/${m[0].id}`); else router.push(`/invoices/new?patientId=${receipt.patientId}`)}} style={{padding:'8px 14px',borderRadius:8,border:'1.5px solid #2bafa0',color:'#2bafa0',background:'white',fontSize:13,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>לצפייה בחשבונית מס קבלה</button>
+              <button style={{padding:'8px 14px',borderRadius:8,border:'1.5px solid #d1d5db',color:'#374151',background:'white',fontSize:13,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>תורים כלליים</button>
+              <button style={{padding:'8px 14px',borderRadius:8,border:'1.5px solid #ef4444',color:'#ef4444',background:'white',fontSize:13,cursor:'pointer',fontFamily:"'Rubik',sans-serif"}}>ביטול והפקת זיכוי</button>
+              <button onClick={()=>{ const phone=(payingAppt?.patient as any)?.phone||''; const msg=encodeURIComponent(`שלום ${receipt.patientName},\nחשבונית מס קבלה ${receipt.invoiceNum} על סך ₪${receipt.amount}`); window.open(`https://wa.me/972${phone.replace(/^0/,'').replace(/-/g,'').replace(/\s/g,'')}?text=${msg}`,'_blank')}} style={{padding:'8px 14px',borderRadius:8,border:'none',background:'#25D366',color:'white',fontSize:13,cursor:'pointer',fontFamily:"'Rubik',sans-serif",fontWeight:600}}>שליחה ב-WhatsApp</button>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <button onClick={()=>{setReceipt(null);router.push(`/patients/${receipt.patientId}`)}} style={{padding:'12px',borderRadius:8,border:'1px solid #d1d5db',background:'#f9fafb',color:'#374151',fontSize:14,cursor:'pointer',fontWeight:600,fontFamily:"'Rubik',sans-serif"}}>לחשבון הלקוח</button>
+              <button onClick={()=>setReceipt(null)} style={{padding:'12px',borderRadius:8,border:'1px solid #d1d5db',background:'#f9fafb',color:'#374151',fontSize:14,cursor:'pointer',fontWeight:600,fontFamily:"'Rubik',sans-serif"}}>חזרה לדף הבית</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

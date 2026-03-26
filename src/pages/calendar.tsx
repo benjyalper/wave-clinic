@@ -413,7 +413,13 @@ export default function CalendarPage() {
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body:JSON.stringify({paid:true,paymentMethod:payModal.payMethod,price:totalPaid}),
       })
-      router.push(`/invoices/${data.id}`)
+      // mark appointment as paid in local state
+      setAppointments(prev=>prev.map(a=>a.id===payModal.appt!.id?{...a,paid:true,price:totalPaid}:a))
+      // show receipt confirmation instead of navigating away
+      const d2=new Date(payModal.appt!.startTime)
+      const HM2=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+      setReceipt({patientName:payModal.toName,date:`${d2.getDate()} ב${HM2[d2.getMonth()]} ${d2.getFullYear()}`,amount:totalPaid,invoiceNum:data.invoiceNumber,patientId:payModal.appt!.patient.id})
+      closePayModal()
     }catch(e:any){
       alert(e.message||'שגיאה ביצירת מסמך')
       setPayModal(m=>({...m,saving:false}))
