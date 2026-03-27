@@ -803,12 +803,12 @@ export default function CalendarPage() {
 
           {/* ── WEEK VIEW ── */}
           {viewMode==='week'&&(
-            <div className="flex-1 bg-white flex flex-col mx-2 my-2 sm:mx-4 sm:my-3 rounded-xl shadow-sm" style={{minHeight:0,overflow:'hidden'}}>
+            <div className="flex-1 bg-white flex flex-col sm:mx-4 sm:my-3 sm:rounded-xl shadow-sm" style={{minHeight:0,overflow:'hidden'}}>
               <div ref={calendarBodyRef} style={{flex:1,overflowY:'auto',overflowX:'hidden',position:'relative'}}>
                 <div style={{width:'100%'}}>
                   {/* sticky day-header row */}
                   <div style={{position:'sticky',top:0,zIndex:5,background:'white',borderBottom:'1px solid #e5e7eb'}}>
-                    <div style={{display:'grid',gridTemplateColumns:'36px repeat(6,1fr)',direction:'rtl',width:'100%'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'28px repeat(6,1fr)',direction:'rtl',width:'100%'}}>
                       <div style={{borderLeft:'1px solid #e5e7eb'}}/>
                       {weekDays.map((day,i)=>{
                         const isToday=isSameDay(day,today)
@@ -827,7 +827,7 @@ export default function CalendarPage() {
                     {TIME_SLOTS.map(slot=>{
                       const isHour=slot.endsWith(':00')
                       return(
-                        <div key={slot} style={{display:'grid',gridTemplateColumns:'36px repeat(6,1fr)',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
+                        <div key={slot} style={{display:'grid',gridTemplateColumns:'28px repeat(6,1fr)',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
                           <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',paddingRight:'2px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
                             {isHour&&<span style={{fontSize:'10px',color:'#9ca3af',fontWeight:500}}>{slot.replace(':00','')}</span>}
                           </div>
@@ -846,7 +846,7 @@ export default function CalendarPage() {
                       )
                     })}
                     {/* overlay: appointment blocks */}
-                    <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'36px repeat(6,1fr)',direction:'rtl',pointerEvents:'none'}}>
+                    <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'28px repeat(6,1fr)',direction:'rtl',pointerEvents:'none'}}>
                       <div/>
                       {weekDays.map((day,colIdx)=>{
                         const isDayToday=isCurrentWeek&&isSameDay(day,today)
