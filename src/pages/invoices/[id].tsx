@@ -67,6 +67,27 @@ export default function InvoicePage() {
       .catch(() => setError('שגיאה בטעינה'))
   }, [id, router])
 
+  useEffect(() => {
+    if (!invoice) return
+    function applyScale() {
+      const inv = document.querySelector<HTMLElement>('.invoice-page')
+      if (!inv) return
+      const vw = window.innerWidth
+      if (vw < 912) {
+        ;(inv.style as any).zoom = (vw / 912).toFixed(4)
+        inv.style.marginTop = '0'
+        inv.style.marginBottom = '0'
+      } else {
+        ;(inv.style as any).zoom = ''
+        inv.style.marginTop = ''
+        inv.style.marginBottom = ''
+      }
+    }
+    requestAnimationFrame(applyScale)
+    window.addEventListener('resize', applyScale)
+    return () => window.removeEventListener('resize', applyScale)
+  }, [invoice])
+
   if (error) return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>{error}</div>
   if (!invoice) return <div style={{ padding: 40, textAlign: 'center' }}>טוען...</div>
 
@@ -83,11 +104,7 @@ export default function InvoicePage() {
             width: 912px;
             margin: 24px auto;
           }
-          /* Scale invoice to fit narrow screens using CSS zoom (affects layout too) */
-          @media (max-width: 911px) {
-            .invoice-wrap { overflow-x: hidden; }
-            .invoice-page { zoom: calc(100vw / 912); margin: 0; }
-          }
+          .invoice-wrap { overflow-x: hidden; }
           @media print {
             .no-print { display: none !important; }
             body { margin: 0 !important; background: white !important; }

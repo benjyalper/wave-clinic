@@ -138,6 +138,10 @@ export default function PatientTreatmentPage() {
         .toolbar-btn:hover {
           background: #f3f4f6;
         }
+        @media (max-width: 640px) {
+          .patient-layout { flex-direction: column !important; }
+          .patient-sidebar { width: 100% !important; box-sizing: border-box !important; }
+        }
       `}</style>
 
       <div dir="rtl" style={{ minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: "'Rubik', sans-serif" }}>
@@ -147,10 +151,10 @@ export default function PatientTreatmentPage() {
         <div className="hidden md:block" style={{ height: '52px' }} />
         <div className="md:hidden" style={{ height: '56px' }} />
 
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        <div className="patient-layout" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px', display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
 
           {/* ── SIDEBAR (first in DOM = right side in RTL) ── */}
-          <div style={{ width: '260px', flexShrink: 0, backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', padding: '20px' }}>
+          <div className="patient-sidebar" style={{ width: '260px', flexShrink: 0, backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', padding: '20px' }}>
 
             {/* Patient name */}
             <div style={{ fontWeight: 700, fontSize: '18px', color: '#2bafa0', textAlign: 'right', marginBottom: '14px' }}>

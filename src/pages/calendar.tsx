@@ -803,70 +803,78 @@ export default function CalendarPage() {
 
           {/* ── WEEK VIEW ── */}
           {viewMode==='week'&&(
-            <div className="flex-1 bg-white overflow-hidden flex flex-col mx-2 my-2 sm:mx-4 sm:my-3 rounded-xl shadow-sm" style={{minHeight:0}}>
-              <div className="overflow-x-auto" style={{flexShrink:0,borderBottom:'1px solid #e5e7eb'}}>
-                <div style={{display:'grid',gridTemplateColumns:'40px repeat(6,minmax(60px,1fr))',direction:'rtl',minWidth:'420px'}}>
-                  <div style={{borderLeft:'1px solid #e5e7eb'}}/>
-                  {weekDays.map((day,i)=>{
-                    const isToday=isSameDay(day,today)
-                    return(
-                      <div key={i} className="py-2 text-center text-sm" style={{borderLeft:i<5?'1px solid #e5e7eb':'none',backgroundColor:isToday?'#fefce8':'white'}}>
-                        <div className="font-medium text-xs mb-0.5" style={{color:isToday?'#2bafa0':'#6b7280'}}>{HEBREW_DAYS[i]}</div>
-                        <div className="font-bold text-base" style={{color:isToday?'#2bafa0':'#111827'}}>{day.getDate()}</div>
-                        <div className="text-xs text-gray-400">{HEBREW_MONTHS_LONG[day.getMonth()]}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+            <div className="flex-1 bg-white flex flex-col mx-2 my-2 sm:mx-4 sm:my-3 rounded-xl shadow-sm" style={{minHeight:0,overflow:'hidden'}}>
               <div ref={calendarBodyRef} style={{flex:1,overflowY:'auto',overflowX:'auto',position:'relative'}}>
-                <div style={{position:'relative',minWidth:'420px'}}>
-                  {TIME_SLOTS.map(slot=>{
-                    const isHour=slot.endsWith(':00')
-                    return(
-                      <div key={slot} style={{display:'grid',gridTemplateColumns:'40px repeat(6,minmax(60px,1fr))',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
-                        <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',paddingRight:'4px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
-                          {isHour&&<span className="text-xs text-gray-400 font-medium">{slot}</span>}
-                        </div>
-                        {weekDays.map((day,colIdx)=>{
-                          const isToday=isSameDay(day,today)
-                          return(
-                            <div key={colIdx}
-                              style={{borderLeft:colIdx<5?'1px solid #e5e7eb':'none',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',backgroundColor:isToday?'rgba(255,255,240,0.8)':'transparent',cursor:'pointer'}}
-                              onMouseEnter={e=>{if(!isToday)(e.currentTarget as HTMLDivElement).style.backgroundColor='#f0faf9'}}
-                              onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.backgroundColor=isToday?'rgba(255,255,240,0.8)':'transparent'}}
-                              onClick={()=>openModal(toDateKey(day),slot)}
-                            />
-                          )
-                        })}
-                      </div>
-                    )
-                  })}
-                  {/* overlay: appointment blocks + current-time line (all pointerEvents:none except blocks) */}
-                  <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'40px repeat(6,minmax(60px,1fr))',direction:'rtl',pointerEvents:'none',minWidth:'420px'}}>
-                    <div/>
-                    {weekDays.map((day,colIdx)=>{
-                      const isDayToday=isCurrentWeek&&isSameDay(day,today)
+                <div style={{minWidth:'400px'}}>
+                  {/* sticky day-header row */}
+                  <div style={{position:'sticky',top:0,zIndex:5,background:'white',borderBottom:'1px solid #e5e7eb'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'40px repeat(6,1fr)',direction:'rtl'}}>
+                      <div style={{borderLeft:'1px solid #e5e7eb'}}/>
+                      {weekDays.map((day,i)=>{
+                        const isToday=isSameDay(day,today)
+                        return(
+                          <div key={i} className="py-2 text-center text-sm" style={{borderLeft:i<5?'1px solid #e5e7eb':'none',backgroundColor:isToday?'#fefce8':'white'}}>
+                            <div className="font-medium text-xs mb-0.5" style={{color:isToday?'#2bafa0':'#6b7280'}}>{HEBREW_DAYS[i]}</div>
+                            <div className="font-bold text-base" style={{color:isToday?'#2bafa0':'#111827'}}>{day.getDate()}</div>
+                            <div className="text-xs text-gray-400">{HEBREW_MONTHS_LONG[day.getMonth()]}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  {/* time slots body */}
+                  <div style={{position:'relative'}}>
+                    {TIME_SLOTS.map(slot=>{
+                      const isHour=slot.endsWith(':00')
                       return(
-                        <div key={colIdx} style={{position:'relative',pointerEvents:'none'}}>
-                          {computeOverlapLayout(getApptBlocksForDay(day)).map(({appt,colIndex,colCount})=>{
-                            const w = colCount > 1 ? 1/colCount : 1
-                            return (
-                              <ApptBlock key={appt.id} appt={appt} extraStyle={{
-                                position:'absolute',
-                                top:`${apptTopPx(appt.startTime)}px`,
-                                right:`calc(${colIndex/colCount*100}% + 1px)`,
-                                width:`calc(${w*100}% - 3px)`,
-                                height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
-                                zIndex:5,
-                                pointerEvents:'auto',
-                                borderRight: colCount > 1 && colIndex > 0 ? '2px solid rgba(255,255,255,0.6)' : undefined,
-                              }}/>
+                        <div key={slot} style={{display:'grid',gridTemplateColumns:'40px repeat(6,1fr)',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
+                          <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',paddingRight:'4px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
+                            {isHour&&<span className="text-xs text-gray-400 font-medium">{slot}</span>}
+                          </div>
+                          {weekDays.map((day,colIdx)=>{
+                            const isToday=isSameDay(day,today)
+                            return(
+                              <div key={colIdx}
+                                style={{borderLeft:colIdx<5?'1px solid #e5e7eb':'none',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',backgroundColor:isToday?'rgba(255,255,240,0.8)':'transparent',cursor:'pointer'}}
+                                onMouseEnter={e=>{if(!isToday)(e.currentTarget as HTMLDivElement).style.backgroundColor='#f0faf9'}}
+                                onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.backgroundColor=isToday?'rgba(255,255,240,0.8)':'transparent'}}
+                                onClick={()=>openModal(toDateKey(day),slot)}
+                              />
                             )
                           })}
                         </div>
                       )
                     })}
+                    {/* overlay: appointment blocks */}
+                    <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'40px repeat(6,1fr)',direction:'rtl',pointerEvents:'none'}}>
+                      <div/>
+                      {weekDays.map((day,colIdx)=>{
+                        const isDayToday=isCurrentWeek&&isSameDay(day,today)
+                        return(
+                          <div key={colIdx} style={{position:'relative',pointerEvents:'none'}}>
+                            {isDayToday&&todayColIndex>=0&&(()=>{
+                              const now=new Date();const mins=(now.getHours()*60+now.getMinutes()-6*60);const top=mins/30*SLOT_HEIGHT
+                              return <div style={{position:'absolute',top:`${top}px`,left:0,right:0,height:'2px',backgroundColor:'#ef4444',zIndex:4,pointerEvents:'none'}}/>
+                            })()}
+                            {computeOverlapLayout(getApptBlocksForDay(day)).map(({appt,colIndex,colCount})=>{
+                              const w = colCount > 1 ? 1/colCount : 1
+                              return (
+                                <ApptBlock key={appt.id} appt={appt} extraStyle={{
+                                  position:'absolute',
+                                  top:`${apptTopPx(appt.startTime)}px`,
+                                  right:`calc(${colIndex/colCount*100}% + 1px)`,
+                                  width:`calc(${w*100}% - 3px)`,
+                                  height:`${apptHeightPx(appt.startTime,appt.endTime)}px`,
+                                  zIndex:5,
+                                  pointerEvents:'auto',
+                                  borderRight: colCount > 1 && colIndex > 0 ? '2px solid rgba(255,255,255,0.6)' : undefined,
+                                }}/>
+                              )
+                            })}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
