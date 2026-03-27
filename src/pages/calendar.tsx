@@ -808,15 +808,15 @@ export default function CalendarPage() {
                 <div style={{width:'100%'}}>
                   {/* sticky day-header row */}
                   <div style={{position:'sticky',top:0,zIndex:5,background:'white',borderBottom:'1px solid #e5e7eb'}}>
-                    <div style={{display:'grid',gridTemplateColumns:'28px repeat(6,1fr)',direction:'rtl',width:'100%'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'28px repeat(6,minmax(0,1fr))',direction:'rtl',width:'100%'}}>
                       <div style={{borderLeft:'1px solid #e5e7eb'}}/>
                       {weekDays.map((day,i)=>{
                         const isToday=isSameDay(day,today)
                         return(
-                          <div key={i} className="py-2 text-center text-sm" style={{borderLeft:i<5?'1px solid #e5e7eb':'none',backgroundColor:isToday?'#fefce8':'white'}}>
-                            <div className="font-medium text-xs mb-0.5" style={{color:isToday?'#2bafa0':'#6b7280'}}>{HEBREW_DAYS[i]}</div>
-                            <div className="font-bold text-base" style={{color:isToday?'#2bafa0':'#111827'}}>{day.getDate()}</div>
-                            <div className="text-xs text-gray-400">{HEBREW_MONTHS_LONG[day.getMonth()]}</div>
+                          <div key={i} className="py-1 text-center" style={{borderLeft:i<5?'1px solid #e5e7eb':'none',backgroundColor:isToday?'#fefce8':'white',overflow:'hidden',minWidth:0}}>
+                            <div style={{fontSize:'10px',fontWeight:500,color:isToday?'#2bafa0':'#6b7280',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{HEBREW_DAY_LETTERS[i]}</div>
+                            <div style={{fontSize:'15px',fontWeight:700,color:isToday?'#2bafa0':'#111827',lineHeight:1.2}}>{day.getDate()}</div>
+                            <div style={{fontSize:'9px',color:'#9ca3af',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{HEBREW_MONTHS_LONG[day.getMonth()]}</div>
                           </div>
                         )
                       })}
@@ -827,7 +827,7 @@ export default function CalendarPage() {
                     {TIME_SLOTS.map(slot=>{
                       const isHour=slot.endsWith(':00')
                       return(
-                        <div key={slot} style={{display:'grid',gridTemplateColumns:'28px repeat(6,1fr)',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
+                        <div key={slot} style={{display:'grid',gridTemplateColumns:'28px repeat(6,minmax(0,1fr))',height:`${SLOT_HEIGHT}px`,direction:'rtl'}}>
                           <div style={{borderLeft:'1px solid #e5e7eb',borderBottom:isHour?'1px solid #f3f4f6':'1px solid #e5e7eb',paddingRight:'2px',display:'flex',alignItems:'flex-start',paddingTop:'2px',justifyContent:'flex-end'}}>
                             {isHour&&<span style={{fontSize:'10px',color:'#9ca3af',fontWeight:500}}>{slot.replace(':00','')}</span>}
                           </div>
@@ -846,7 +846,7 @@ export default function CalendarPage() {
                       )
                     })}
                     {/* overlay: appointment blocks */}
-                    <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'28px repeat(6,1fr)',direction:'rtl',pointerEvents:'none'}}>
+                    <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'grid',gridTemplateColumns:'28px repeat(6,minmax(0,1fr))',direction:'rtl',pointerEvents:'none'}}>
                       <div/>
                       {weekDays.map((day,colIdx)=>{
                         const isDayToday=isCurrentWeek&&isSameDay(day,today)
